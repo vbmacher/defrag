@@ -1,0 +1,385 @@
+# Slovak translations for f32id package
+# Slovenské preklady pre balík f32id.
+# Copyright (C) 2006 Peter Jakubco
+# This file is distributed under the same license as the f32id package.
+# Peter Jakubco <pjakubco@gmail.com>, 2006.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.1b\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2006-11-10 12:10+0100\n"
+"PO-Revision-Date: 2006-11-10 12:13+0100\n"
+"Last-Translator: Peter Jakubco <pjakubco@gmail.com>\n"
+"Language-Team: Slovak <sk-i18n@lists.linux.sk>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+#: entry.c:50
+#, c-format
+msgid ""
+"\n"
+"ERROR: "
+msgstr "\nCHYBA: "
+
+#: defrag.c:216
+#, c-format
+msgid "    found cluster1(%lx) parent: %lx\n"
+msgstr "    najdeny predchodca clustera1(%lx): %lx\n"
+
+#: defrag.c:221
+#, c-format
+msgid "    found cluster2(%lx) parent: %lx\n"
+msgstr "    najdeny predchodca cluster2(%lx): %lx\n"
+
+#: defrag.c:168
+#, c-format
+msgid "    redefining starting cluster1(%lx) %lx (equal to cluster1) to %lx\n"
+msgstr "    menim poziciu start. clustera1(%lx) %lx (rovnake ako cluster1) na poz. %lx\n"
+
+#: defrag.c:185
+#, c-format
+msgid "    redefining starting cluster2(%lx) %lx (equal to cluster2) to %lx\n"
+msgstr "    menim poziciu start. cluster2(%lx) %lx (rovnake ako cluster2) na poz. %lx\n"
+
+#: defrag.c:336
+#, c-format
+msgid "  (def_defragFile) defragmenting chain: %lx->%lx to %lx->%lx\n"
+msgstr "  (def_defragFile) defragmentujem retaz: %lx->%lx na %lx->%lx\n"
+
+#: defrag.c:250
+#, c-format
+msgid "  (redefining starting cluster) aTable[%lu] = %lx\n"
+msgstr "  (menim poziciu start. clustera) aTable[%lu] = %lx\n"
+
+#: defrag.c:255
+#, c-format
+msgid "  (switching) aTable[%lu] = %lx\n"
+msgstr "  (vymena) aTable[%lu] = %lx\n"
+
+#: entry.c:38
+#, c-format
+msgid ""
+"  -h  --help\t\t\tShows this information\n"
+"  -l  --log_file nazov_suboru\tSet program output to log file\n"
+"  -x  --xmode\t\t\tWork in X mode (debug mode)\n"
+msgstr ""
+"  -h  --help\t\t\tZobrazi tieto informacie\n"
+"  -l  --log_file nazov_suboru\tNastavi vystup programu do log suboru\n"
+"  -x  --xmode\t\t\tPracuje v X rezime (debug rezim)\n"
+
+#: defrag.c:161
+#, c-format
+msgid "  cluster1(%lx) is root cluster\n"
+msgstr "  cluster(%lx) je root cluster\n"
+
+#: defrag.c:167
+#, c-format
+msgid "  cluster1(%lx) is starting; dir entry cluster %lx (aTable index %lu)\n"
+msgstr "  cluster1(%lx) je startovaci; cluster adresara: %lx (aTable index %lu)\n"
+
+#: defrag.c:195
+#, c-format
+msgid "  cluster1(%lx).value = %lx\n"
+msgstr "  cluster1(%lx).hodnota = %lx\n"
+
+#: defrag.c:177
+#, c-format
+msgid "  cluster2(%lx) is root\n"
+msgstr "  cluster2(%lx) je root cluster\n"
+
+#: defrag.c:184
+#, c-format
+msgid "  cluster2(%lx) is starting; reading entry from cluster %lx\n"
+msgstr "  cluster2(%lx) je startovaci; citam polozku z clustera %lx\n"
+
+#: defrag.c:196
+#, c-format
+msgid "  cluster2(%lx).value = %lx\n"
+msgstr "  cluster2(%lx).hodnota = %lx\n"
+
+#: defrag.c:149
+#, c-format
+msgid "  switching %lx <-> %lx\n"
+msgstr "  vymena clusterov %lx <-> %lx\n"
+
+#: defrag.c:385
+#, c-format
+msgid " (count: %lu)\n"
+msgstr " (pocet: %lu)\n"
+
+#: defrag.c:373
+#, c-format
+msgid "(count: %lu)\n"
+msgstr "(pocet: %lu)\n"
+
+#: defrag.c:401
+#, c-format
+msgid "(def_defragTable) aTable values (%lu): "
+msgstr "(def_defragTable) hodnoty start.clusterov z aTable (pocet: %lu): "
+
+#: defrag.c:370
+#, c-format
+msgid "(def_defragTable) filechain for %lu: "
+msgstr "(def_defragTable) retaz suboru pre %lu: "
+
+#: defrag.c:382
+#, c-format
+msgid "(def_defragTable) new filechain for %lu: "
+msgstr "(def_defragTable) nova retaz suboru pre %lu: "
+
+#: defrag.c:114
+#, c-format
+msgid "(def_findFirstUsable) searching for first usable cluster (from %lx)..."
+msgstr "(def_findFirstUsable) hladam najblizsi pouzitelny cluster (od %lx)..."
+
+#: defrag.c:287
+#, c-format
+msgid "(def_placeStartCluster) moving %lx -> %lx\n"
+msgstr "(def_placeStartCluster) presuvam %lx -> %lx\n"
+
+#: fat32.c:79
+#, c-format
+msgid "(f32_mount) BIOS Parameter Block (BPB):\n"
+msgstr "(f32_mount) BIOS Parameter Block (BPB):\n"
+
+#: fat32.c:100
+#, c-format
+msgid "(f32_mount) BPB_BkBootSec: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_BkBootSec: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:82
+#, c-format
+msgid "(f32_mount) BPB_BytesPerSec: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_BytesPerSec: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:95
+#, c-format
+msgid "(f32_mount) BPB_ExtFlags: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_ExtFlags: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:89
+#, c-format
+msgid "(f32_mount) BPB_FATSz16: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_FATSz16: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:94
+#, c-format
+msgid "(f32_mount) BPB_FATSz32: %ld, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_FATSz32: %ld, offset: %x, velkost: %d\n"
+
+#: fat32.c:99
+#, c-format
+msgid "(f32_mount) BPB_FSInfo: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_FSInfo: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:96
+#, c-format
+msgid "(f32_mount) BPB_FSVer major: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_FSVer major: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:97
+#, c-format
+msgid "(f32_mount) BPB_FSVer minor: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_FSVer minor: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:92
+#, c-format
+msgid "(f32_mount) BPB_HiddSec: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_HiddSec: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:88
+#, c-format
+msgid "(f32_mount) BPB_Media: %x, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_Media: %x, offset: %x, velkost: %d\n"
+
+#: fat32.c:85
+#, c-format
+msgid "(f32_mount) BPB_NumFATs: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_NumFATs: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:91
+#, c-format
+msgid "(f32_mount) BPB_NumHeads: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_NumHeads: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:101
+#, c-format
+msgid "(f32_mount) BPB_Reserved: '%s', offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_Reserved: '%s', offset: %x, velkost: %d\n"
+
+#: fat32.c:98
+#, c-format
+msgid "(f32_mount) BPB_RootClus: %ld, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_RootClus: %ld, offset: %x, velkost: %d\n"
+
+#: fat32.c:86
+#, c-format
+msgid "(f32_mount) BPB_RootEntCnt: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_RootEntCnt: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:84
+#, c-format
+msgid "(f32_mount) BPB_RsvdSecCnt: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_RsvdSecCnt: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:90
+#, c-format
+msgid "(f32_mount) BPB_SePerTrk: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_SePerTrk: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:83
+#, c-format
+msgid "(f32_mount) BPB_SecPerClus: %u, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_SecPerClus: %u, offset: %x, velkost: %d\n"
+
+#: fat32.c:87
+#, c-format
+msgid "(f32_mount) BPB_TotSec16: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_TotSec16: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:93
+#, c-format
+msgid "(f32_mount) BPB_TotSec32: %ld, offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_TotSec32: %ld, offset: %x, velkost: %d\n"
+
+#: fat32.c:80
+#, c-format
+msgid "(f32_mount) BPB_jmpBoot: '%s', offset: %x, size: %d\n"
+msgstr "(f32_mount) BPB_jmpBoot: '%s', offset: %x, velkost: %d\n"
+
+#: fat32.c:104
+#, c-format
+msgid "(f32_mount) BS_BootSig: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_BootSig: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:102
+#, c-format
+msgid "(f32_mount) BS_DrvNum: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_DrvNum: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:107
+#, c-format
+msgid "(f32_mount) BS_FilSysType: '%s', offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_FilSysType: '%s', offset: %x, velkost: %d\n"
+
+#: fat32.c:81
+#, c-format
+msgid "(f32_mount) BS_OEMName: '%s', offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_OEMName: '%s', offset: %x, velkost: %d\n"
+
+#: fat32.c:103
+#, c-format
+msgid "(f32_mount) BS_Reserved1: %d, offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_Reserved1: %d, offset: %x, velkost: %d\n"
+
+#: fat32.c:105
+#, c-format
+msgid "(f32_mount) BS_VolID: %ld, offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_VolID: %ld, offset: %x, velkost: %d\n"
+
+#: fat32.c:106
+#, c-format
+msgid "(f32_mount) BS_VolLab: '%s', offset: %x, size: %d\n"
+msgstr "(f32_mount) BS_VolLab: '%s', offset: %x, velkost: %d\n"
+
+#: analyze.c:192
+#, c-format
+msgid "Analysing disk...\n"
+msgstr "Analyzujem disk...\n"
+
+#: fat32.c:62
+#, c-format
+msgid "Can't determine FAT type (label: '%s')\n"
+msgstr "Nemozem zistit typ FAT (oznacenie: '%s')\n"
+
+#: entry.c:130
+#, c-format
+msgid "Can't open image file (%s)"
+msgstr "Nemozem otvorit subor obrazu (%s)"
+
+#: entry.c:112
+#, c-format
+msgid "Can't open log file: %s"
+msgstr "Nemozem otvorit log subor: %s"
+
+#: fat32.c:76
+msgid "Can't read BPB !"
+msgstr "Nemozem precitat BPB !"
+
+#: defrag.c:86 defrag.c:117 defrag.c:192 defrag.c:193 fat32.c:216
+msgid "Can't read from FAT !"
+msgstr "Nemozem citat z FAT !"
+
+#: fat32.c:181
+#, c-format
+msgid "Can't read from image (pos.:0x%lx) !"
+msgstr "Nemozem citat z obrazu (poz.:0x%lx) !"
+
+#: fat32.c:157
+#, c-format
+msgid "Can't read from image (pos.:0x%lx)!"
+msgstr "Nemozem citat z obrazu (poz.:0x%lx) !"
+
+#: fat32.c:188
+#, c-format
+msgid "Can't write to image (pos.:0x%lx) !"
+msgstr "Nemozem zapisovat do obrazu (poz.:0x%lx !"
+
+#: defrag.c:358
+#, c-format
+msgid "Defragmenting disk...\n"
+msgstr "Defragmentujem disk...\n"
+
+#: entry.c:143
+#, c-format
+msgid "Disk doesn't need defragmentation.\n"
+msgstr "Disk nepotrebuje defragmentaciu.\n"
+
+#: analyze.c:206
+#, c-format
+msgid "Disk is fragmented for: %.2f%%\n"
+msgstr "Disk je fragmentovany z: %.2f%%\n"
+
+#: fat32.c:111
+#, c-format
+msgid "File system on image isn't FAT32, but FAT%d !"
+msgstr "Suborovy system na obraze nie je FAT32, ale FAT%d !"
+
+#: entry.c:126
+msgid "Missing argument - image file"
+msgstr "Chyba argument - subor obrazu"
+
+#: analyze.c:68 analyze.c:72 analyze.c:120 defrag.c:363 defrag.c:364
+#: defrag.c:365 fat32.c:120
+msgid "Out of memory !"
+msgstr "Nedostatok pamate !"
+
+#: entry.c:36
+#, c-format
+msgid "Syntax: %s options image_file\n"
+msgstr "Pouzitie: %s prepinace subor_obrazu\n"
+
+#: fat32.c:154 fat32.c:236
+msgid "Trying to read cluster > max !"
+msgstr "Pokus o citanie clustera > max !"
+
+#: fat32.c:178 fat32.c:252
+msgid "Trying to write cluster > max !"
+msgstr "Pokus o zapis clustera > max !"
+
+#: entry.c:101
+msgid "Wrong option, use -h or --help"
+msgstr "Nespravny prepinac, pouzite -h alebo --help"
+
+#: defrag.c:129
+#, c-format
+msgid "found (%lx)\n"
+msgstr "najdeny (%lx)\n"
+
+#: defrag.c:125
+#, c-format
+msgid "not found!\n"
+msgstr "nenajdeny!\n"
