@@ -1,21 +1,20 @@
 /**
  * @file entry.c
  *
- * @brief Toto je hlavný modul, rozlí¹i parametre a spustí defragmentáciu.
+ * @brief This is the main module, it handles command line parameters and executes defragmentation.
  *
- * Najprv sa nastaví textová doména podla nastavenia LOCALE, potom sa rozparsujú prepínaèe pomocou
- * funkcie getopt_long. V¹etky hlásenia programu (okrem chybových a okrem progress baru) sa zapisujú
- * do ¹tandardného prúdu (definovaného smerníkom output_stream), ktorý je na zaèiatku nastavený na
- * stdout. V prípade, ak je pou¾itý prepínaè -l (alebo -log_file), tak sú hlásenia presmerované
- * do log súboru, ktorý je daný ako prvý argument tohto prepínaèa.
+ * At first, text domain is set up according to LOCALE setting, then the command line parameters are parsed using
+ * getopt_long function. All program messages (besides error messages and progress bar) are written into standard
+ * output stream (defined by pointer output_stream) that is on the start set up to stdout. If -l (or -log_file) parameter
+ * is used, then messages are re-directed into the log file that is given as first argument of this parameter.
  *
- * @section Options Popis prepínaèov
- * - -h (alebo --help)                     - Zobrazí informácie o pou¾ití programu
- * - -l logfile (alebo --log_file logfile) - Presmeruje hlásenia programu do súboru logfile
- * - -x (alebo --xmode)                    - Program pracuje v debug re¾ime (vypisuje sa vela dodatoèných informácií)
+ * @section Options Description of command line parameters
+ * - -h (or --help)                     - Shows information of program usage
+ * - -l logfile (or --log_file logfile) - Redirects program messages into log file
+ * - -x (or --xmode)                    - Forces the program to work in debug mode (it shows many additional informations)
  *
  */
-/* Modul som zaèal písa» dòa: 31.10.2006 */
+/* The module I've started to write at day: 31.10.2006 */
 
 #include <getopt.h>
 #include <stdio.h>
@@ -30,18 +29,19 @@
 #include <fat32.h>
 #include <analyze.h>
 #include <defrag.h>
+#include "mainpage.h"
 
-/** Názov programu */
+/** Name of the program */
 const char *program_name;
-/** Výstupný prúd (buï stdout, alebo log súbor) */
+/** Output stream (either stdout, or log file) */
 FILE *output_stream;
 
-/** Èi je pou¾itý debug re¾im */
+/** If the debud mode is used */
 int debug_mode = 0;
 
-/** Procedúra vypí¹e hlásenie o pou¾ití programu a ukonèí ho 
- *  @param stream definuje prúd, do ktorého sa bude zapisova»
- *  @param exit_code definuje chybový kód, ktorým sa program ukonèí
+/** The procedure prints message of program usage and exits. 
+ *  @param stream define stream where the messages should be written to
+ *  @param exit_code defines exit code by which the program will end
  */
 void print_usage(FILE *stream, int exit_code)
 {
@@ -53,10 +53,9 @@ void print_usage(FILE *stream, int exit_code)
   exit(exit_code);
 }
 
-/** Vypí¹e chybové hlásenie do stderr a podla nastavenia parametra p_usage
- *  vypíse help
- *  @param p_usage Èi sa má zavola» funkcia print_usage
- *  @param message Správa na vypísanie
+/** It shows error message into stderr stream and according to setting of p_usage parameter show program usage.
+ *  @param p_usage if print_usage function should be called
+ *  @param message error message
  */
 void error(int p_usage, char *message, ...)
 {
@@ -73,56 +72,58 @@ void error(int p_usage, char *message, ...)
   else exit(1);
 }
 
-/** Hlavná funkcia
- * @brief nastaví doménu správ, rozparsuje prepínaèe, vykoná analýzu fragmentácie disku a zavolá funkciu defragmentovania.
- * Doména správ sa berie z predvoleného adresára /usr/share/locale, a má názov f32id_loc.
- * Na rozparsovanie prepínaèov (ako krátkych, tak aj dlhých a prípadne ich argumenty) pou¾ívam funkciu getopt_long, ktorá
- * to urobí za mòa :-)
+/** Main function
+ * @brief it sets upt message domain, parse the command line parameters, performs disk fragmentation analysis and calls
+ * defragmentation function.
+ * The message domain is taken from default directory /usr/share/locale, and it is called f32id_loc.
+ * For parsing the command line parameters (as short ones, as long ones and their arguments), there is used getopt_long
+ * function that it performs it for me :-)
  *
- * Ak bol nastavený prepínaè -h (zobrazí pou¾itie programu), tak sa ïal¹ie parametre u¾ nerozoberajú (okrem prepínaèa -l)
- * a program po vypísaní daného hlásenia ukonèí svoju èinnos». V iných prípadoch program pokraèuje analýzou fragmentácie
- * a samotnou defragmentáciou (v prípade potreby). Defragmentácia sa zapne, iba ak je disk fragmentovaný z minimálne 1%.
+ * If the -h switch was defined (shows program usage), then other parameters are ignored (instead of -l switch)
+ * and the program is terminated. In other cases the program continues with fragmentartion analysis and by the
+ * defragmentation itself (in the case of need). Defragmentation will be executed only if the disk is fragmented of
+ * minimal 1%.
  */
 int main(int argc, char *argv[])
 {
-  int next_option; 				/* ïal¹í prepínaè */
-  int image_descriptor = 0;			/* file deskriptor obrazu FS */
-  const char *log_filename = NULL;		/* názov log súboru */
-  const char* const short_options = "hl:x";	/* re»azec krátkych prepínaèov */
+  int next_option; 				/* next parameter */
+  int image_descriptor = 0;			/* file descriptor of image */
+  const char *log_filename = NULL;		/* name of log file */
+  const char* const short_options = "hl:x";	/* string of short parameter names */
 
-  /* Pole ¹truktúr popisujúce platné dlhé prepínaèe */
+  /* Array of structures that describes long parameter names */
   const struct option long_options[] = {
     { "help",		0, NULL, 'h' },
     { "log_file",	1, NULL, 'l' },
     { "xmode",		0, NULL, 'x' },
-    { NULL,		0, NULL, 0 }		/* Potrebne na konci pola */
+    { NULL,		0, NULL, 0 }		/* Needed for to determine end of the array */
   };
-  Oflags flags = { 0,0,0,0 };			/* príznaky prepínaèov programu */
+  Oflags flags = { 0,0,0,0 };			/* flags of the program switches */
 
-  /* Nastaví sa doména správ */
+  /* Sets up the message domain */
   setlocale(LC_ALL, "");
-  bindtextdomain("f32id_loc", "/usr/share/locale"); /* default je /usr/share/locale */
+  bindtextdomain("f32id_loc", "/usr/share/locale"); /* default is /usr/share/locale */
   textdomain("f32id_loc");
 
-  output_stream = stdout;			/* pre zaèiatok je výstup na obrazovku */
-  /* Skutoèný názov programu sa zapamätá, aby mohol by» pou¾itý v rôznych hláseniach programu */
+  output_stream = stdout;			/* for start, the output is on the screen */
+  /* Real name of the program is stored in order to be possible to use it in various messages of the program */
   program_name = argv[0];
-  opterr = 0; /* Potlaèenie výpisu chybových hlásení funkcie getopt_long */
+  opterr = 0; /* Force the getopt_long function for not showing error messages */
   do {
     next_option = getopt_long(argc, argv, short_options, long_options, NULL);
     switch (next_option) {
-      case 'h':  /* -h alebo --help */
+      case 'h':  /* -h or --help */
         flags.f_help = 1;
 	break;
-      case 'l':  /* -l alebo --log_file */
+      case 'l':  /* -l or --log_file */
         log_filename = optarg;
 	flags.f_logfile = 1;
         break;
-      case 'x':  /* -x alebo --xmode */
+      case 'x':  /* -x or --xmode */
         flags.f_xmode = 1;
         break;
       case '?':
-        /* Neplatny prepinac */
+        /* Wrong parameter */
 	error(0,gettext("Wrong option, use -h or --help"));
       case -1:
         break;
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
     }
   } while (next_option != -1);
 
-  /* V prípade pou¾itia log súboru treba presmerova» do neho stdout */
+  /* If log file is used, the stdout needed to be redirected to it */
   if (flags.f_logfile)
     if ((output_stream = fopen(log_filename,"w")) == NULL)
       error(0,gettext("Can't open log file: %s"), log_filename);
@@ -145,29 +146,30 @@ int main(int argc, char *argv[])
   else
     debug_mode = 0;
 
-  /* Teraz premenná optind ukazuje na prvý nie-prepínaèový parameter;
-   *  mal by nasledova» jeden parameter - názov súboru image-u
+  /* Now the optind variable points at the first non-switch parameter;
+   *  i.e. there should be one parameter - name of the file image
    */
   if (optind == argc)
     error(1,gettext("Missing argument - image file"));
 
-  /* pokúsi sa otvori» image */
+  /* tries to open the image */
   if ((image_descriptor = open(argv[optind], O_RDWR)) == -1)
     error(0,gettext("Can't open image file (%s)"), argv[optind]);
   
-  /* namontovanie obrazu */
+  /* mounting the image */
   f32_mount(image_descriptor);
 
-  /* analýza fragmentácie disku */
+  /* analysis of the disk fragmentation */
   an_analyze();
 
-  /* ak je disk fragmentovaný z min. 1% */
+  /* if the disk is fragmented from min. 1% */
   if ((int)diskFragmentation > 0)
-    /** samotná defragmentácia */
+    /** the defragmentation itself */
     def_defragTable();
   else
     fprintf(output_stream, gettext("Disk doesn't need defragmentation.\n"));
-  /* odmontovanie obrazu, uvolnenie pamäte */
+
+  /* un-mounting the image, freeing memory */
   an_freeTable();
   f32_umount();
   

@@ -1,10 +1,10 @@
 /**
  * @file defrag.c
  * 
- * @brief Modul vykonáva defragmentáciu disku
+ * @brief Module performs disk defragmentation
  *
  */
-/* Modul som zaèal písa» dòa: 3.11.2006 */
+/* I've started to write the module at day: 3.11.2006 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,23 +17,24 @@
 #include <fat32.h>
 
 
-/** pomocný buffer pre adresárové polo¾ky (ak sa updatuje direntry) */
+/** temporary buffer for directory items (if direntry is updated) */
 F32_DirEntry *entries = NULL;
 unsigned short entryCount;
 
-/** 1. cache klastra */
+/** 1. cache of cluster */
 unsigned char *cacheCluster1 = NULL;
-/** 2. cache klastra */
+/** 2. cache of cluster */
 unsigned char *cacheCluster2 = NULL;
 
-/** poradie klastra, ktorý sa defragmentuje (pou¾íva sa pri výpoète % )*/
+/** index of cluster that is actually defragmenting (it is used for percentage computation)*/
 unsigned long clusterIndex;
 
-/** Funkcia nájde rodièa klastra z FAT
- *  Ak má parameter hodnotu 0, rodiè sa nehladá. V opaènom prípade sa zaène prehladáva»
- *  celá FAT, èi nejaký klaster odkazuje na klaster daný parametrom.
- * @param cluster èíslo klastra, ktorého rodiè sa hladá
- * @return funkcia vráti èíslo klastra rodièa, alebo 0 v prípade, ¾e sa nena¹iel.
+/** The function finds parent of cluster from FAT
+ *  If parameter has value 0, parent is not searched. In the other case whole FAT is being scanned
+ *  if some cluster links to the cluster given as parameter.
+ * @param cluster number of cluster that we need parent of
+ * @return number of parent cluster of the given cluster or 0 in a case that it is not found or it is
+ *         root cluster.
  */
 unsigned long def_findParent(unsigned long cluster)
 {
@@ -47,11 +48,11 @@ unsigned long def_findParent(unsigned long cluster)
 }
 
 /**
- * Funkcia zistí, èi je klaster ¹tartovací (prehladá sa tabulka aTable)
- * @param cluster testovací klaster
- * @param index výstupná premenná bude obsahova» inkrementované poradie v aTable, ak bol
- *              klaster ¹tartovací. Ak nie je, výstupom bude 0.
- * @return funkcia vráti 1, ak klaster je ¹tartovací a 0 ak nie
+ * Function determines if a cluster is starting cluster (the aTable is translated)
+ * @param cluster testing cluster
+ * @param index it is output variable that will contain incremented index in aTable, if the
+ *              cluster was starting. If not, its value will be 0.
+ * @return it returns 1, if cluster is starting or 0 otherwise
 */
 int def_isStarting(unsigned long cluster, unsigned long *index)
 {
@@ -65,12 +66,13 @@ int def_isStarting(unsigned long cluster, unsigned long *index)
   return 0;
 }
 
-/** Funkcia nájde prvý pou¾itelný klaster (výstup do outCluster) a jeho hodnotu (výstup do outValue)
-  * Pou¾itelný klaster je taký, ktorý sa dá prepísa» (je v "intervale platných klastrov") a nie je chybný
-  * @param beginCluster odkial sa má hlada»
-  * @param outCluster výstup - nájdený pou¾itelný klaster
-  * @param outValue výstup - hodnota nájdeného klastra
-  * @return v prípade chyby vracia funkcia 1, inak 0.
+/** The function find first usable cluster (output is directed into outCluster variable) and its value (the output is
+  * directed into outValue).
+  * Usable cluster is that can be overwritten (is in the "interval of good clusters") and is not bad.
+  * @param beginCluster from where we should start to search
+  * @param outCluster output variable - found usable cluster
+  * @param outValue output variable - value of found cluster
+  * @return it returns 1 in case of an error, or 0 otherwise.
   */
 int def_findFirstUsable(unsigned long beginCluster, unsigned long *outCluster, unsigned long *outValue)
 {
@@ -101,62 +103,62 @@ int def_findFirstUsable(unsigned long beginCluster, unsigned long *outCluster, u
 }
 
 /**
- * Je to najdôle¾itej¹ia funkcia - vymení 2 navzájom klastre (ako vo FAT, tak aj v aTable a aj fyzicky).
- * Pri výmene dvoch klastrov postupujem nasledovne:
+ * This is the most important function - it switches 2 clusters (as in FAT, as in aTable and physically, too).
+ * The two clusters are switched in following way:
  * 
- * -# zistenie, èi sú klastre ¹tartovacie. Ak áno, update dir entry. V prípade,
- *    ¾e niektorý z klastrov je root, tak sa treba patriène postara» aj o neho,
- *    èi¾e je potrebné updatova» bpb (FAT32 mô¾e ma» root klaster hocikde).
- * -# update FAT - výmena hodnôt vo FAT tabulke.
- *    Ak bol niektorý/obidva klastre èas»ou re»aze, treba updatova» jeho/ich
- *    rodièov vo FAT - èi¾e vymeni» rodièovské odkazy. V prípade, ¾e bude chybná
- *    FAT a nejaký klaster odkazuje na volný klaster, nastane velmi vá¾na chyba,
- *    ktorá vedie k ïal¹iemu hor¹iemu po¹kodeniu FAT, lebo sa nenájde rodiè (podla nasl.
- *    podmienok) a vznikne tak krí¾ová referencia. Preto je tu mo¾né pou¾i» dve mo¾nosti:
- *    -# predpoklada», ¾e je FAT v poriadku a uvies» korektnú podmienku na nájdenie rodièa
- *    -# pou¾i» poloviènú (ale postaèujúcu) podmienku a nepotrebova», aby klastre neodkazovali na 0.
+ * -# determine if clusters are starting. If yes, update dir entry. In case that one of the clusters is root,
+ *    then it is necessary to take care of it, i.e. it is necessary to update also bpb (FAT32 can have root
+ *    cluster anywhere).
+ * -# update FAT - switch of values in FAT table.
+ *    If one of or both clusters part of a chain, it is necessary to update its/their parents in FAT - i.e. to
+ *    switch parent links. In a case that FAT is bad and some cluster links to a free cluster, very serious error
+ *    will arise that leads to further and worse damage of FAT, because parent will not be found parent (according
+ *    to next conditions) and there be created cross-reference. Therefore there is possible to use two options:
+ *    -# assume that FAT is OK and use correct condition for parent searching;
+ *    -# use half (but enough) condition and do not require that clusters should not point to 0.
  *    .
- *    Korektná podmienka na nájdenie rodièa: Ak klaster nie je ¹tartovací a jeho hodnota nie je 0 hladaj rodièa<br/>
- *    Polovièná podimenka na nájdenie rodièa: Ak klaster nie je ¹tartovací hladaj rodièa
- *    Vo svojom rie¹ení som pou¾il poloviènú podmienku, preto som musel upravi» aj
- *    funkciu pre nájdenie rodièa.
- *    Po týchto operáciách sa navzájom vymenia hodnoty klastrov vo FAT tabulke - tu
- *    v¹ak musím da» pozor na zacyklenie, ako vyplýva z nasledujúceho príkladu:
+ *    The correct condition for parent searching: If cluster is not starting and its value is not 0, find parent.<br/>
+ *    The half-condition for parent searching: If cluster is not starting, find parent.
+ *
+ *    In my solution I used half-condition only, therefore I had to modify also the function for finding the parent.
+ *    After these operations, the cluster values are switched in the FAT table - here I have to take care for infinite
+ *    loop, as it is shown in the following example:
+ *
  *    \code
- *      defragmentovane:  A -> A -> A -> N -> N -> N -> N
- *      retaz          : ...->213->214->2c4->215->980->...
+ *      defragmented:  Y -> Y -> Y -> N -> N -> N -> N
+ *      chain       : ...->213->214->2c4->215->980->...
  *    \endcode
- *    a chcem vymeni» 2c4<->215.
- *    Tak skúsim normálnu výmenu:
- *    - 2c4 nie je ¹tartovací, jeho rodièom je 214 (èi¾e 214 ukazuje na 2c4)
- *    - 215 nie je ¹tartovací, jeho rodièom je 2c4 (èi¾e 2c4 ukazuje na 215)
+ *
+ *    And I want to switch 2c4<->215. Firstly I try normal switch:
+ *    - 2c4 is not starting, its parent is 214 (i.e. 214 points at 2c4)
+ *    - 215 is not starting, its parent is 2c4 (i.e. 2c4 points at 215)
  *    .
- *    update rodièov
- *      - 214 bude ukazova» na 215
- *      - 2c4 bude ukazova» na 980
+ *    update of parents:
+ *      - 214 will point at 215
+ *      - 2c4 will point at 980
  *      .
- *    a výmena FAT hodnôt: 
- *    - klaster 2c4 pôvodne ukazujúci na 215 bude ukazova» na 980 (na hodnotu, na ktorú ukazuje klaster 215)
- *    - klaster 215 pôvodne ukazujúci na 980 bude ukazova» na 215 (na hodnotu, na ktorú ukazuje klaster 2c4)
+ *    and witching FAT values: 
+ *    - cluster 2c4 originally pointing at 215 will point at 980 (on value that 215 cluster is pointing at)
+ *    - cluster 215 originally pointing at 980 will point at 215 (on value that 2c4 cluster is pointing at)
  *    .
- *    Èi¾e po takejto výmene bude nová re»az vyzera» takto:
+ *    After this switch new chain will look like this:
  *    \code
- *       214->215->215->215->... (zacyklenie)
+ *       214->215->215->215->... (circular referrence)
  *       2c4->980->...
  *    \endcode
- *    a preto musím urobi» opatrenie. V inom prípade sa pou¾ije táto klasická výmena.
- * -# update hodnôt v aTable
- * -# výmena samotných dát klastrov
+ *    Therefore I need to perform a precaution. In another case the classic switch will be performed.
+ * -# update values in aTable
+ * -# last step is switching the data in clusters
  *
- * @param cluster1 èíslo prvého klastra
- * @param cluster2 èíslo druhého klastra
- * @return funkcia vráti 0, ak nebola chyba.
+ * @param cluster1 number of first cluster
+ * @param cluster2 number of sectond cluster
+ * @return function returns 0 if there was no error.
  */
 int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 {
-  unsigned long isStarting1, isStarting2; /* ci su clustre startovacie. 
-                                             Ak ano, vyjadruju (index + 1)
-					     v tabulke aTable
+  unsigned long isStarting1, isStarting2; /* if the clusters are starting. 
+                                             If yes, they hold (index + 1)
+					     in table aTable
 					  */
   unsigned long tmpVal1, tmpVal2;
   unsigned long clus1val, clus2val;
@@ -165,14 +167,14 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     fprintf(output_stream,gettext("  switching %lx <-> %lx\n"), cluster1, cluster2);
 
   if (cluster1 == cluster2) return 0;
-  /* 1. zistenie, ci su clustre startovacie. Ak ano, update dir entry. */
-  /* pozor na root ! moze sa jednat aj o neho */
+  /* 1. find out if clusters are starting. If yes, update dir entry. */
+  /* be careful on root! It can be one of the clusters */
     def_isStarting(cluster1, &isStarting1);
     def_isStarting(cluster2, &isStarting2);
     
     if (isStarting1) {
       if (!aTable[isStarting1-1].entryCluster) {
-        /* jedna sa o Root */
+        /* the first cluster is root */
         if (debug_mode)
           fprintf(output_stream, gettext("  cluster1(%lx) is root cluster\n"), cluster1);
 	bpb.BPB_RootClus = cluster2;
@@ -191,7 +193,7 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       if (!aTable[isStarting2-1].entryCluster) {
         if (debug_mode)
           fprintf(output_stream, gettext("  cluster2(%lx) is root\n"), cluster2);
-        /* jedna sa o Root */
+        /* second cluster is root */
 	bpb.BPB_RootClus = cluster1;
 	d_writeSectors(0, (char*)&bpb, 1);
       } else {
@@ -211,14 +213,11 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       fprintf(output_stream, gettext("  cluster1(%lx).value = %lx\n"), cluster1, clus1val);
       fprintf(output_stream, gettext("  cluster2(%lx).value = %lx\n"), cluster2, clus2val);
     }
-    /* ak bol niektory/obidva clustery castou retaze, treba updatovat jeho/ich
-       rodicov vo FAT */
-    /* v pripade, ze bude chybna FAT a nejaky cluster odkazuje na
-       free cluster (cize clus1val alebo clus2val = 0), nastane kruta chyba,
-       lebo sa nenajde rodic (podla nasl. podmienok) a vznikne tak
-       krizova referencia. Preto rozmyslam o dvoch moznostiach:
-       predpokladat, ze je FAT v poriadku a uviest korektnu podmienku, alebo
-       pouzit polovicnu podmienku a nechciet, aby hodnota clusterov nebola 0 */
+    /* If some or both clusters were part of the chain, it is necessary to update its/their
+       parents in FAT.
+
+       In a case that FAT is wrong and some cluster points at free cluster (i.e. clus1val or clus2val = 0),
+       cruel error will be created, because the parent won't be found. */
 //    if (!isStarting1 && clus1val)
     if (!isStarting1)
       tmpVal1 = def_findParent(cluster1);
@@ -237,23 +236,23 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
         fprintf(output_stream, gettext("    found cluster2(%lx) parent: %lx\n"), cluster2, tmpVal2);
       f32_writeFAT(tmpVal2, cluster1);
     }
-    /* vymena FAT hodnot */
+    /* switching FAT values */
     if (clus1val == cluster2) {
-      /* proti zacykleniu
-         priklad:
-         defrag:  A -> A -> N -> N -> N -> N
+      /* against circullar referrences
+         example:
+         defrag:  Y -> Y -> N -> N -> N -> N
          chain : ...->214->2c4->215->980->...
 
-         chcem vymenit 2c4<->215
-	 po normalnej vymene bude: 214->215->215->215->...
-	                           2c4->980->...
-	 preto musim urobit opatrenie
+         want to switch 2c4<->215
+	 after normal switch it will be: 214->215->215->215->...
+	                                 2c4->980->...
+	 therefore I need to perform a precaution.
       */
       f32_writeFAT(cluster1, clus2val);
       f32_writeFAT(cluster2, cluster1);
     } else if (clus2val == cluster1) {
-      /* z druhej strany opatrenie */
-      /* ak plati cluster1 < cluster2, k tejto moznosti by nemalo dojst ak plati cluster1 < cluster2 */
+      /* precaution from the other side */
+      /* If cluster1 < cluster2, we should not consider this option.. */
       f32_writeFAT(cluster1, cluster2);
       f32_writeFAT(cluster2, clus1val);
     } else {
@@ -271,15 +270,15 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
         fprintf(output_stream, gettext("  (switching) aTable[%lu] = %lx\n"), isStarting2-1, cluster1);
       aTable[isStarting2-1].startCluster = cluster1;
     }
-    /* ak bol niektory z vymenenych clusterov direntry nejakeho startovacieho
-       v aTable, musim updatovat aj tuto hodnotu */
+    /* If some of switched clusters was direntry of some starting cluster in aTable, we have to update
+       also this value */
     for (tmpVal1 = 0; tmpVal1 < tableCount; tmpVal1++)
       if (aTable[tmpVal1].entryCluster == cluster1)
         aTable[tmpVal1].entryCluster = cluster2;
       else if (aTable[tmpVal1].entryCluster == cluster2)
         aTable[tmpVal1].entryCluster = cluster1;
 
-  /* 3. fyzicka vymena */
+  /* 3. physicall switch */
     f32_readCluster(cluster1, cacheCluster1);
     f32_readCluster(cluster2, cacheCluster2);
     f32_writeCluster(cluster1, cacheCluster2);
@@ -289,13 +288,13 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 }
 
 
-/** Funkcia nájde nové miesto (optimálne) pre ¹tartovací klaster v prípade potreby
-  * Pracuje klasickým algoritmom, èi¾e nájde najbli¾¹í pou¾itelný klaster od
-  * beginCluster a ak je men¹í ako pôvodný startCluster, vymenia sa.
-  * @param startCluster súèasný ¹tartovací klaster
-  * @param beginCluster odkial sa mô¾e hlada» nový ¹tartovací klaster
-  * @param outputCluster výstup - tu sa zapí¹e nové èíslo ¹tartovacieho klastra
-  * @return funkcia vráti 0 ak nebola chyba, inak 1.
+/** This function finds a new location (optimal) for starting cluster in case of need.
+  * It works by classic algorithm, i.e. it founds closest usable cluster from beginCluster
+  * and if it is less than original startCluster, they will switch.
+  * @param startCluster current starting cluster
+  * @param beginCluster from where we can search for new starting cluster
+  * @param outputCluster output variable - there a new number of starting cluster will be written
+  * @return function returns 0 if there was no error, or 1 otherwise.
   */
 int def_optimizeStartCluster(unsigned long startCluster, unsigned long beginCluster, unsigned long *outputCluster)
 {
@@ -314,13 +313,13 @@ int def_optimizeStartCluster(unsigned long startCluster, unsigned long beginClus
 }
 
 /**
- * Vykreslí grafický proggress bar zlo¾ený z '='.
- * Percentá vypoèíta na základe vzorcov:
+ * This function draws graphical progress bar from '=' chars.
+ * Percentage is computed based on equations:
  * \code
- *   percent = (cislo defragmentovaneho klastra) / (pocet vsetkych pouzitych klastrov) * 100
- *   (pocet '=') = size / 100 * percent
+ *   percent = (number of defragmented cluster) / (number of all used clusters) * 100
+ *   (number of '=') = size / 100 * percent
  * \endcode
- * @param size velkos» baru
+ * @param size size of the progress bar
 */
 void print_bar(int size)
 {
@@ -339,11 +338,11 @@ void print_bar(int size)
   printf("]");
 }
 
-/** Funkcia defragmentuje ne¹tartovacie klastre súboru/adresára, pracuje iba s 1 klastrom
- *  pozor! FAT-ka musí byt v poriadku, nesmie obsahova» krí¾ové referencie.
+/** The function defragments non-starting clusters of file/directory, it works only with a single cluster
+ *  WARNING! FAT had to be OK, it does not have to contain cross referrences.
  *
- *  @param startCluster èíslo ¹tartovacieho klastra
- *  @return funkcia vráti èíslo posledného klastra, ktorý bol defragmentovaný
+ *  @param startCluster number of starting cluster
+ *  @return function returns number of last cluster that was defragmented
  */
 unsigned long def_defragFile(unsigned long startCluster)
 {
@@ -354,13 +353,13 @@ unsigned long def_defragFile(unsigned long startCluster)
   for (;;) {
     cluster2 = f32_getNextCluster(cluster1);
     clusterIndex++;
-    /* koniec suboru */
+    /* end of the file */
     if (F32_LAST(cluster2)) { cluster2 = cluster1; break; }
-    /* volny, rezervovany cluster */
+    /* free, reserved cluster */
     if (F32_FREE(cluster2) || F32_RESERVED(cluster2)) { cluster2 = cluster1; break; }
-    /* chybny cluster */
+    /* bad cluster */
     if (F32_BAD(cluster2)) { cluster2 = cluster1; break; }
-    /* chybna hodnota FAT */
+    /* bad value in FAT */
     if ((cluster2 > 0xfffffff) || (cluster2 > info.clusterCount)) { cluster2 = cluster1; break; }
 
     if ((cluster1+1) != cluster2) {
@@ -368,7 +367,7 @@ unsigned long def_defragFile(unsigned long startCluster)
       if (debug_mode)
         fprintf(output_stream,gettext("  (def_defragFile) defragmenting chain: %lx->%lx to %lx->%lx\n"), cluster1, cluster2, cluster1, tmpClus);
       if (cluster2 > tmpClus) {
-        /* treba defragmentovat */
+        /* it is needed to defragment */
         def_switchClusters(cluster2, tmpClus);
 	cluster2 = tmpClus;
       }
@@ -381,11 +380,11 @@ unsigned long def_defragFile(unsigned long startCluster)
   return cluster2;
 }
 
-/** Funkcia defragmentuje súbory/adresáre podla tabulky aTable.
- *  Alokuje pamä» pre cache klastrov, pre buffer direntry. Defragmentácia prebieha v cykle.
- *  V tomto cykle sa pre aktuálnu polo¾ku aTable najprv nájde nový (optimálny) ¹tartovací klaster
- *  a potom sa zavolá funkcia na defragmentáciu ne¹tartovacích klastrov.
- *  @return Funkcia vráti 0, ak nenastala chyba.
+/** The function defragments files/directories according to aTable.
+ *  It allocates memory for clusters cache, then for direntry buffer. Defragmentation runs in a cycle.
+ *  In that cycle, at first new (optimal) starting cluster is found for actual item in aTable. Then a function
+ *  for non-starting clusters defragmentation is called.
+ *  @return Function returns 0, if there was no error.
  */
 int def_defragTable()
 {
@@ -396,7 +395,7 @@ int def_defragTable()
   fprintf(output_stream, gettext("Defragmenting disk...\n"));
   fprintf(output_stream, "0%%\r");
 
-  /* alokacia direntry a pomocnych clusterov */
+  /* Allocation of direntry and temporary clusters */
   entryCount = (bpb.BPB_SecPerClus * info.BPSector) / sizeof(F32_DirEntry);
   if ((entries = (F32_DirEntry *)malloc(entryCount * sizeof(F32_DirEntry))) == NULL) error(0,gettext("Out of memory !"));
   if ((cacheCluster1 = (unsigned char*)malloc(bpb.BPB_SecPerClus * info.BPSector * sizeof(unsigned char))) == NULL) error(0, gettext("Out of memory !"));
@@ -411,11 +410,11 @@ int def_defragTable()
       if (F32_LAST(i)) { j++; fprintf(output_stream, "%lx", i); }
       fprintf(output_stream,gettext("(count: %lu)\n"),j);
     }
-    /* optimalne umiestni startovaci cluster, moze sposobit dodatocnu fragmentaciu */
+    /* Optimally places starting cluster, it can cause additional fragmentation */
     defClus++;
     def_optimizeStartCluster(aTable[tableIndex].startCluster, defClus, &defClus);
     clusterIndex++;
-    /* defragmentacia nestartovacich clusterov */
+    /* Defragmentation of non-starting clusters */
     defClus = def_defragFile(aTable[tableIndex].startCluster);
 
     if (debug_mode) {

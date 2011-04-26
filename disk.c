@@ -1,16 +1,16 @@
 /**
  * @file disk.c
  *
- * @brief Modul simuluje fyzické diskové operácie (cez súbor obrazu).
+ * @brief The module simulates physical disk operations (through image file).
  *
- * Mojou snahou bolo napísa» nezávislý modul na ovládanie fyzických diskových operácií, ktorý je mo¾né v
- * budúcnosti prepísa» aj pre pou¾itie pre reálny disk bez nutnosti zmien ostatných modulov. Sú tu implementované
- * niektoré základné funkcie ako namontovanie disku (ide o priradenie file descriptora), naèítanie niekolkých
- * sektorov a zápis niekolkých sektorov. Tieto funkcie sú implementované tak, ¾e sa iba pohybujú v súbore danom
- * deskriptorom disk_descriptor a na danej pozícii urobia príslu¹né operácie.
+ * The aim was to write independent module for controlling physical disk operations that is possible to rewrite in
+ * future also for real disk usage without modification needs of other modules. There are implemented some basic
+ * functions, such as disk mount (assigning a file descriptor), loading/storing some sectors. These functions are
+ * implemented in a way that every disk change is only movement of a pointer into the image file, given by file
+ * descriptor called disk_descriptor and on given location they perform the operations.
  *
  */
-/* Modul som zaèal písa» dòa: 1.11.2006 */
+/* The module I've started to write at day: 1.11.2006 */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -18,11 +18,11 @@
 #include <disk.h>
 #include <entry.h>
 
-/** Deskriptor súboru obrazu */
+/** Descriptor of file image */
 int disk_descriptor = 0;
 
-/** Funkcia namontuje obraz disku (èi¾e priradí globálnej premennej disk_descriptor parameter
- *  @param image_descriptor Tento parameter sa priradí do globálnej premennej disk_descriptor
+/** Function mounts disk image (i.e. assigns the parameter into global variable disk_descriptor)
+ *  @param image_descriptor This parameter will be assigned into disk_descriptor variable
  */
 int d_mount(int image_descriptor)
 {
@@ -31,26 +31,27 @@ int d_mount(int image_descriptor)
 }
 
 
-/** Odmontovanie obrazu disku, ide o vynulovanie deskriptora */
+/** Un-mounting disk image, the descriptor is zero-ed. */
 int d_umount()
 {
   disk_descriptor = 0;
   return 0;
 }
 
-/** Funkcia zistí, èi je disk namontovaný */
+/** The function determines if the disk is mounted
+    @return If the disk is mounted, return 1, or 0 otherwise. */
 int d_mounted()
 {
   if (!disk_descriptor) return 0;
   else return 1;
 }
 
-/** Funkcia preèíta count sektorov z obrazu z logickej LBA adresy do buffera
- *  @param LBAaddress logická LBA adresa, z ktorej sa má èíta»
- *  @param buffer do tohto buffera sa zapí¹u naèítané sektory dát
- *  @param count poèet sektorov, ktoré sa majú naèíta»
- *  @param BPSector Poèet bytov / sektor
- *  @return vracia poèet skutoène naèitaných sektorov
+/** The function reads 'count' sectors from the image of LBA logicall address into buffer
+ *  @param LBAaddress logical LBA address, from that we should read sectors
+ *  @param buffer into this buffer the sectors' data are written to
+ *  @param count number of sectors that should be read
+ *  @param BPSector Number of bytes per sector
+ *  @return number of really read sectors
  */
 unsigned short d_readSectors(unsigned long LBAaddress, void *buffer, unsigned short count, unsigned short BPSector)
 {
@@ -62,12 +63,12 @@ unsigned short d_readSectors(unsigned long LBAaddress, void *buffer, unsigned sh
   return (unsigned short)(size / BPSector);
 }
 
-/** Funkcia zapí¹e count sektorov do obrazu na logickú LBA adresu z buffera
- *  @param LBAaddress logická LBA adresa, na ktorú sa má zapisova»
- *  @param buffer z tohto buffera sa budú dáta èíta»
- *  @param count poèet sektorov, ktoré sa majú zapísa»
- *  @param BPSector Poèet bytov / sektor
- *  @return vracia poèet skutoène zapísaných sektorov
+/** The function writes 'count' sectors into the file disk image on the logical LBA address from buffer.
+ *  @param LBAaddress logical LBA address, where we should write sectors
+ *  @param buffer from this buffer the data will be read
+ *  @param count number of sectors that should be written
+ *  @param BPSector Number of bytes per sector
+ *  @return number of really written sectors
  */
 unsigned short d_writeSectors(unsigned long LBAaddress, void *buffer, unsigned short count, unsigned short BPSector)
 {

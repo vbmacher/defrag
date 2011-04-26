@@ -12,12 +12,12 @@
 #ifndef __ANALYZE__
 #define __ANALYZE__
 
-  /* polozka v tabulke fragmentovanych suborov/adresarov */
+  /* Item in a table of fragmented files/directories */
   typedef struct {
-    unsigned long entryCluster;	/* cislo clustera, kde sa nachadza suborova polozka */
-    unsigned short entryIndex;	/* cislo polozky v clusteri */
-    unsigned long startCluster;	/* cislo pociatocneho sektora */
-    unsigned long clusterCount; /* pocet clusterov */
+    unsigned long entryCluster;	/* number of cluster where file entry is located */
+    unsigned short entryIndex;	/* number of an entry in cluster */
+    unsigned long startCluster;	/* number of starting sector */
+    unsigned long clusterCount; /* number of clusters */
   } __attribute__((packed)) aTableItem;
 
   extern aTableItem *aTable;

@@ -1,18 +1,18 @@
 /**
  * @file fat32.c
  *
- * @brief Modul implementuje operácie so súborovým systémom FAT32
+ * @brief Module for implementing operations with FAT32 file system.
  *
- * Modul implementuje základné funkcie pre prácu so súborovým systémom FAT - sú tu funkcie ako zistenie typu FAT,
- * preèítanie a zápis hodnôt do FAT, preèítanie a zápis klastrov a podobne. Modul priamo vyu¾íva funkcie modulu disk.c,
- * dá sa poveda», ¾e je akýmsi vy¹¹ím levelom.
+ * The module implements basic functions for working with FAT file system - they are functions such as finding up FAT type,
+ * reading and writing of FAT values, reading and writing clusters and so on. The module directly uses functions of disk.c
+ * module; it can be assumed as a higher-level module.
  *
- * E¹te jedna zaujímavos»: Pre èítanie a zápis hodnôt do FAT tabulky je pou¾itá cache, ktorý obsahuje celý sektor, v
- * ktorom sa nachádza hodnota, s ktorou sa pracuje. Táto cache sa aktualizuje, ak je pracovná hodnota mimo jej rozsahu.
- * Pomáha tak k urýchleniu práce samotného procesu defragmentácie.
+ * One another interesting thing: For reading and writing values into FAT table the cache is used that contains the whole
+ * sector that includes a value that it is working with. This cache is updated if the working value is out of the range.
+ * It helps to faster work of the defragmenter.
  *
  */
-/* Modul som zaèal písa» dòa: 1.11.2006 */
+/* The module I've started to write at day: 1.11.2006 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,22 +23,23 @@
 #include <disk.h>
 #include <fat32.h>
 
-/** globálna premenná BIOS Parameter Block */
+/** global variable BIOS Parameter Block */
 F32_BPB bpb;
-/** informácie o systéme (výber hodnôt z bpb plus ïal¹ie hodnoty, ako zaèiatok dátovej oblasti, apod. ) */
+/** Informations about the system (a mix of values taken from bpb plus other values, such as the beginning of data
+    area, etc.) */
 F32_Info info;
 
-unsigned long *cacheFsec; /** cache pre jeden sektor FAT tabulky */
-static unsigned short cacheFindex = 0; /** èíslo cachovaného sektora (log.LBA) */
+unsigned long *cacheFsec; /** cache for the single sector of FAT table */
+static unsigned short cacheFindex = 0; /** number of cached sector (log.LBA) */
 
-/** Funkcia zistí typ FAT a naplní ¹truktúru info; bpb musí u¾ by» naèítaný.
-  * Typ FAT sa dá korektne zisti» (podla Microsoftu) jedine podla
-  * poètu klastrov vo FAT. Ak je ich poèet < 4085, ide o FAT12, ak je < 65525 ide o FAT16, inak o FAT32.
-  * Tato determinácia typu FAT je v¹ak urèená pre skutoèné FAT-ky; keï¾e obraz má niekedy len 1MB a tam
-  * sa vojde asi okolo 1000 klastrov, "korektná" determinácia zlyháva a výsledok by bol FAT12. Preto som musel
-  * determináciu urobi» "nekorektnou" a pou¾i» zistenie podla bpb.BS_FilSysType (obsahuje buï "FAT12   ", "FAT16   ",
-  * alebo "FAT32   "), kde zistenie typu FAT podla tohto parametra pova¾uje Microsoft za neprípustné...
-  * @return Funkcia vracia typ súborového systému (kon¹tanty definované vo fat32.h)
+/** The function determines the FAT type and fills up the info structure; bpb must be loaded already.
+  * Type of the FAT can be correctly determined (according to Microsoft) only by the number of clusters in FAT.
+  * If their number is < 4085, it is FAT12, if it is < 65525 it is FAT16, otherwise FAT32.
+  * This detection can be used for real FATs only; the image file can have sometimes only 1MB and there can be only 1000
+  * clusters, therefore the "correct" detection fails and the result would be FAT12. Therefore I had to do the detection
+  * "incorrectly" and use the detection according to the bpb.BS_FilSysType (it contains either "FAT12   ", "FAT16   ",
+  * or "FAT32   "), where the FAT type detection according to this field Microsoft denies...
+  * @return type of the file system (constant defined in fat32.h)
   */
 int f32_determineFATType()
 {
@@ -63,19 +64,19 @@ int f32_determineFATType()
 }
 
 
-/** Namontovanie súborového systému FAT32, znamená to vlastne:
- *  -# zisti», èi je typ FS naozaj FAT32
- *  -# zisti» dodatoèné informácie o FATke (naplni» ¹truktúru F32_Info)
- *  -# alokova» pamä» pre cache
+/** Mounting the FAT32 file system, it means actually:
+ *  -# to determine if the FS is really FAT32
+ *  -# to get additional information about FAT (fill F32_Info structure)
+ *  -# allocate memory for cache
  *
- * @return ak nebola ¾iadna chyba, vracia 0.
+ * @return It returns 0 if there was no error.
  */
 int f32_mount(int image_descriptor)
 {
   int ftype;
-  d_mount(image_descriptor); /* namontujem disk, aby bolo mozne pouzivat diskove operacie */
+  d_mount(image_descriptor); /* mount the disk, in order we would be able to use dist operations */
 
-  /* Nacitanie BPB */
+  /* Loading BPB */
   if (d_readSectors(0, (char*)&bpb, 1, 512) != 1)
     error(0,gettext("Can't read BPB !"));
 
@@ -110,15 +111,15 @@ int f32_mount(int image_descriptor)
     fprintf(output_stream, gettext("(f32_mount) BS_VolLab: '%s', offset: %x, size: %d\n"), bpb.BS_VolLab, (int)((int)(&bpb.BS_VolLab) - (int)(&bpb)), sizeof(bpb.BS_VolLab));
     fprintf(output_stream, gettext("(f32_mount) BS_FilSysType: '%s', offset: %x, size: %d\n"), bpb.BS_FilSysType, (int)((int)(&bpb.BS_FilSysType) - (int)(&bpb)), sizeof(bpb.BS_FilSysType));
   }
-  /* kontrola, ci je to FAT32 (podla Microsoftu nespravna) */
+  /* check if it is FAT32 (wrong according to Microsoft) */
   if ((ftype = f32_determineFATType()) != FAT32)
     error(0,gettext("File system on image isn't FAT32, but FAT%d !"),ftype);
   
-  /* zisti, ci je FAT zrkadlena */
+  /* finds out if the FAT is mirrorred */
   if (!(bpb.BPB_ExtFlags & 0x80)) info.FATmirroring = 1;
   else {
     info.FATmirroring = 0;
-    info.FATstart += (bpb.BPB_ExtFlags & 0x0F) * info.FATsize; /* ak nie, nastavi sa na aktivnu FAT */
+    info.FATstart += (bpb.BPB_ExtFlags & 0x0F) * info.FATsize; /* if not, it sets up to the active FAT */
   }
   if ((cacheFsec = (unsigned long *)malloc(sizeof(unsigned long) * info.fSecClusters)) == NULL)
     error(0,gettext("Out of memory !"));
@@ -126,8 +127,8 @@ int f32_mount(int image_descriptor)
   return 0;
 }
 
-/** Funkcia zistí, èi je FAT32 namontovaný; je to vtedy, keï nie je nulová FATstart a keï je namontovaný disk
- *  @return 1 ak je namontovaný FAT32, inak 0
+/** Function determines if the FAT32 is mounted; it is if the FATstart is not null and when disk is mounted.
+ *  @return 1 if the FAT32 is mounted, 0 otherwise.
  */
 int f32_mounted()
 {
@@ -135,7 +136,7 @@ int f32_mounted()
   else return 0;
 }
 
-/** Funkcia odmontuje FAT, èi¾e vynuluje FATstart, uvolní pamä» cache a odmontuje disk */
+/** Function un-mounts the FAT, i.e. zero-es FATstart, frees cache memory and un-mounts the disk */
 int f32_umount()
 {
   info.FATstart = 0;
@@ -144,11 +145,11 @@ int f32_umount()
   return 0;
 }
 
-/** Funkcia preèíta hodnotu klastra vo FAT tabulke (vráti ju vo value), vyu¾íva sa cache FATky.
- *  Je tu implementovaná iba F32 verzia, èi¾e funkcia nie je pou¾itelná pre FAT12/16.
- *  @param cluster èíslo klastra, ktorého hodnota sa z FAT preèíta
- *  @param value[výstup] do tohto smerníka sa ulo¾í preèítaná hodnota
- *  @return v prípade, ak nenastala chyba, fukncia vráti 0.
+/** The function reads the value of a cluster in the FAT table (returns it in value variable), it uses cache of the FAT.
+ *  There is implemented only FAT32 version, i.e. the function is not usable for FAT12/16.
+ *  @param cluster number of cluster that value will be read from FAT
+ *  @param value[output] into this pointer the read value will be stored
+ *  @return It returns 0 if there was no error.
  */
 int f32_readFAT(unsigned long cluster, unsigned long *value)
 {
@@ -158,8 +159,8 @@ int f32_readFAT(unsigned long cluster, unsigned long *value)
   
   if (!f32_mounted()) return 1;
   
-  logicalLBA = info.FATstart + ((cluster * 4) / info.BPSector); /* sektor FAT, ktory obsahuje cluster */
-  index = (cluster % info.fSecClusters); /* index v sektore FAT tabulky */
+  logicalLBA = info.FATstart + ((cluster * 4) / info.BPSector); /* FAT sector that contains the cluster */
+  index = (cluster % info.fSecClusters); /* index in the sector of FAT table */
   if (logicalLBA > (info.FATstart + info.FATsize))
     error(0,gettext("Trying to read cluster > max !"));
 
@@ -173,12 +174,12 @@ int f32_readFAT(unsigned long cluster, unsigned long *value)
   return 0;
 }
 
-/** Funkcia zapí¹e hodnotu klastra do FAT tabulky, vyu¾íva sa cache FATky.
- *  Je tu implementovaná iba F32 verzia, èi¾e funkcia nie je pou¾itelná pre FAT12/16. V prípade, ¾e je zapnuté
- *  zrkadlenie FATky, je hodnota zapísaná aj do druhej kópie (predpokladajú sa iba dve kópie).
- *  @param cluster èíslo klastra, do ktorého sa zapí¹e hodnota vo FAT
- *  @param value urèuje hodnotu, ktorá bude zapísaná do FAT
- *  @return v prípade, ak nenastala chyba, fukncia vráti 0.
+/** The function writes the value of a cluster into FAT table, it uses cache of the FAT.
+ *  It is implemented only FAT32 version, i.e. the function is not usable for FAT12/16. If FAT mirrorring
+ *  is turned on, the value is also written into the second FAT copy (there are assumed only two copies).
+ *  @param cluster number of a cluster
+ *  @param value the data that will be written into the FAT
+ *  @return Returns 0 if there was no error.
  */
 int f32_writeFAT(unsigned long cluster, unsigned long value)
 {
@@ -189,7 +190,7 @@ int f32_writeFAT(unsigned long cluster, unsigned long value)
     
   value &= 0x0fffffff;
   logicalLBA = info.FATstart + ((cluster * 4) / info.BPSector);
-  index = (cluster % info.fSecClusters); /* index v sektore FAT tabulky */
+  index = (cluster % info.fSecClusters); /* index in FAT table sector */
   if (logicalLBA > (info.FATstart + info.FATsize))
     error(0,gettext("Trying to write cluster > max !"));
   
@@ -204,27 +205,25 @@ int f32_writeFAT(unsigned long cluster, unsigned long value)
     error(0,gettext("Can't write to image (pos.:0x%lx) !"), logicalLBA);
 
   if (info.FATmirroring)
-    /* predpokladam, ze su iba 2 kopie FAT */
+    /* there is assumed only 2 copies of FAT */
     if (d_writeSectors(logicalLBA + info.FATsize, cacheFsec, 1, info.BPSector) != 1)
       return 1;
   
   return 0;
 }
 
-/** Funkcia vypoèíta ¹tartovací klaster z dir entry, (pozn.: Pre FAT12/16 netreba poèíta», preto¾e je vyu¾ívaná max.
-  * 16 bitová hodnota, prièom vo FAT32 je ¹tartovací klaster rozdelený v ¹truktúre do dvoch 16 bitových polo¾iek a
-  * je potrebné ich vhodne "spoji»").
-  * @param entry ¹truktúra dir polo¾ky
-  * @return vypoèítaný ¹tartovací klaster
+/** The function computes starting cluster from the dir entry, (note: For FAT12/16 this does not need to be computed, because there is used maximum 16-bit value. Within FAT32 the starting cluster is split into a structure of two 16-bit items and they need to be "concatenated" in appropriate way).
+  * @param entry structure of dir entry
+  * @return computed starting cluster
   */
 unsigned long f32_getStartCluster(F32_DirEntry entry)
 {
   return ((unsigned long)entry.startClusterL + ((unsigned long)entry.startClusterH << 16));
 }
 
-/** Funkcia nastaví ¹tartovací klaster do dir entry
- *  @param cluster èíslo klastra, ktoré sa pou¾ije ako nová hodnota ¹tart. klastra
- *  @param entry[výstup] smerník na ¹truktúru dir polo¾ky, do ktorej sa zapí¹e nová hodnota ¹tart.klastra
+/** The function sets the starting cluster into the dir entry
+ *  @param cluster number of a cluster that will be used as a new value of the starting cluster
+ *  @param entry[output] pointer to structure of the dir entry into that the new value will be written of the starting cluster
  */
 void f32_setStartCluster(unsigned long cluster, F32_DirEntry *entry)
 {
@@ -232,9 +231,9 @@ void f32_setStartCluster(unsigned long cluster, F32_DirEntry *entry)
   (*entry).startClusterL = (unsigned short)(cluster & 0xffff);
 }
 
-/** Funkcia nájde ïal¹í klaster v re»azi (nasledovníka predchodcu)
- *  @param cluster èíslo klastra (predchodca)
- *  @return vráti hodnotu predchudcu z FAT
+/** The function finds out the next cluster in the chain (the follower of the predecessor)
+ *  @param cluster number of the cluster (predecessor)
+ *  @return returns a value of the predecessor cluster from FAT
  */
 unsigned long f32_getNextCluster(unsigned long cluster)
 {
@@ -244,11 +243,11 @@ unsigned long f32_getNextCluster(unsigned long cluster)
   return val;
 }
 
-/** Funkcia naèíta celý klaster do pamäte (dáta, nie hodnotu FAT), potrebné údaje berie z u¾ naplnenej ¹truktúry F32_info
- *  (ako napr. sectors per cluster, atï).
- *  @param cluster èíslo klastra, ktorý sa má naèíta»
- *  @param buffer[výstup] smerník na buffer, kde sa cluster naèíta
- *  @return v prípade chyby vráti 1, inak 0
+/** The function reads all cluster into memory (data, not the FAT value). Needed information it takes from already
+ *  filled F32_info structure (e.g. sectors per cluster, etc.).
+ *  @param cluster number of cluster that should be read
+ *  @param buffer[output] pointer to the buffer where the data would be pushed
+ *  @return In a case of error, it returns 1; 0 otherwise.
  */
 int f32_readCluster(unsigned long cluster, void *buffer)
 {
@@ -265,12 +264,10 @@ int f32_readCluster(unsigned long cluster, void *buffer)
     return 0;
 }
 
-/* zapise cely cluster do pamate */
-/** Funkcia zapí¹e celý klaster z pamäte do obrazu (dáta, nie hodnotu FAT), potrebné údaje berie z u¾ naplnenej
- *  ¹truktúry F32_info (ako napr. sectors per cluster, atï).
- *  @param cluster èíslo klastra, do ktorého sa bude zapisova»
- *  @param buffer smerník na buffer, z ktorého sa budú èíta» údaje
- *  @return v prípade chyby vráti 1, inak 0
+/** The function writes all the cluster from the memory into the disk image (data, not FAT value). Required information it takes from already filled structure F32_info (e.g. sectors per cluster, etc.).
+ *  @param cluster number of cluster for writing
+ *  @param buffer pointer to the buffer from what the data will be read
+ *  @return In a case of error, it returns 1; 0 otherwise.
  */
 int f32_writeCluster(unsigned long cluster, void *buffer)
 {

@@ -14,12 +14,11 @@
 	Release info
 	~~~~~~~~~~~~
         v0.1b (12.11.2006)
-          Opravene vsetky podstatne bugy, sfunkcnenie prepinacov
+          Fixed all relevant bugs, command line parameters added
 	v0.1a (4.11.2006) 
-	  jednoducha defragmentacia, manipuluje sa iba s 1 clusterom.
-	  Nie je funkcna kontrola FAT systemu, pracuje sa iba so systemom
-	  FAT32. Algoritmus ako vo windowse (natlaci vsetko na zaciatok)
- 
+	  simple defragmentation, manipulates with single cluster.
+	  Not functioning checking of FAT table, working only with FAT32.
+          Algorithm as in Windows (pushes everything on the beginning)
 */
  
 #ifndef __F32ID_VERSION__

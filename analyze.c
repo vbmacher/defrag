@@ -1,10 +1,10 @@
 /**
  * @file analyze.c
  * 
- * @brief Modul na analýzu fragmentácie disku
+ * @brief Module for disk fragmentation analysis
  *
  */
-/* Modul som zaèal písa» dòa: 2.11.2006 */
+/* Modul i've started to write at day: 2.11.2006 */
 
 
 #include <stdlib.h>
@@ -17,35 +17,35 @@
 #include <fat32.h>
 #include <analyze.h>
 
-/** Tabulka s dôle¾itými informáciami o ka¾dej polo¾ke v celej adresárovej ¹truktúre.
- * Jednotlivé polo¾ky tejto tabulky obsahujú: ¹tartovací klaster, èíslo adresárového klastra, èíslo
- * polo¾ky v adresárovom klastri, poèet klastrov (táto hodnota sa vyplní a¾ pri håbkovej analýze).
- * Defragmentácia pracuje na základe údajov v tejto tabulke.
+/** Table with important informations about each item in all directory structure.
+ * The items contain: starting cluster, the number of directory cluster, the number of the item
+ * in the directory cluster, number of clusters (this value is filled up in deep analysis).
+ * Defragmentation works based on values within this table.
  */
 aTableItem* aTable = NULL;
 
-/** Poèet hodnôt v tabulke je rovný poètu v¹etkých súborov
-  * a adresárov, ktoré majú alokovaný aspoò 1 klaster
+/** Number of values in the table is equal to number of all files and directories that have
+  * allocated almost 1 cluster
   */
 unsigned long tableCount = 0;
 
-/** Percentuálna disková fragmentácia */
+/** Percentual disk fragmentation */
 float diskFragmentation;
 
-/** Poèet pou¾itých klastrov */
+/** Number of used clusters */
 unsigned long usedClusters;
 
-/** Poèet polo¾iek v jednom adresári (premenlivá hodnota podla velkosti klastra) */
+/** Number of items in single directory (variable value according to cluster size) */
 unsigned short entryCount;
 
-/** Naplnenie tabulky aTable sa deje rekurzívne, tabulka je implementovaná
-  * ako dynamické pole o max. 10000 polo¾iek (èi¾e mô¾e existova» max 10000
-  * súborov a adresárov spolu na disku). Vhodnej¹ia by bola mo¾no implementácia
-  * pomocou spojkového zoznamu, no pre úèely zadania myslím postaèí aj dynamické pole.
-  * Táto funkcia pridá novú polo¾ku do aTable, vyplní v¹ak iba niektoré informácie v polo¾ke
-  * @param startCluster ¹tartovací klaster polo¾ky
-  * @param entCluster klaster adresára, ktorá odkazuje na polo¾ku
-  * @param ind index, poradové èíslo polo¾ky v adresárovom klastri
+/** Filling the aTable table woks in recursive way, the table is implemented
+  * as dynamic array of max 10000 items (i.e. there can exist maximum 10000
+  * files and directories together on disk). More appropriate implementation would be
+  * using linked list, but for experiment purposes the dynamic array is enough.
+  * This function adds new item into the aTable, however it fills only some informations in the item
+  * @param startCluster starting cluster of the item
+  * @param entCluster directory cluster that links to the item
+  * @param ind index of the item in directory cluster
   */
 void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned short ind)
 {
@@ -61,33 +61,34 @@ void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned s
   aTable[tableCount-1].entryIndex = ind;
 }
 
-/** Funkcia uvolní pamä» pou¾itú pre aTable
+/** The function frees up memory used for aTable
   */
 void an_freeTable()
 {
   free(aTable);
 }
 
-/** Funkcia zistí percentuálnu fragmentáciu jednej adresárovej
-  * polo¾ky (súboru / adresára). Je súèas»ou håbkovej analýzy disku.
-  * Pracuje tak, ¾e pre daný ¹tartovací klaster prejde
-  * celou re»azou a zis»uje, èi klastre idú za sebou, èi¾e èi rozdiel nasledujúceho a 
-  * aktuálneho klastra dáva 1. V prípade, ¾e nie, inkrementuje sa poèet fragmentovaných klastrov.
-  * Poèas prechodu celej re»aze sa uchováva celkový poèet klastrov, ktorými sa pre¹lo. Po opustení
-  * cyklu prechodu re»azou udáva táto premenná poèet klastrov súboru/adresára a je ulo¾ená do aTable.
-  * Percentuálna fragmentácia sa vypoèíta podla vz»ahu:
+/** The function determines percentage fragmentation of single directory item (file/directory). It is
+  * part of the deep disk analysis.
+  * 
+  * For given starting cluster it traverses all the chain of clusters and determines if clusters are
+  * going one after another, i.e. that if the difference of next and actual cluster number is 1. 
+  * In a case that not, it increments number of fragmented clusters.
+  * Within the traversion of the chain there is stored number of all clusters that were traversed. After
+  * loop is finished, this variable contains number ofall clusters of the file or directory and it is stored.
+  * into aTable. Percentual fragmentation is computed as:
   * \code
-  *   (pocet frag.klastrov polozky) / (pocet vsetkych pouzitych klastrov polozky) * 100
+  *   (num. of frag.cluster of the item) / (num. of all used clusters of the item) * 100
   * \endcode
-  * @param startCluster ¹tartovací klaster polo¾ky
-  * @param aTIndex index v tabulke aTable - do tabulky sa zapí¹e poèet klastrov adresárovej polo¾ky
-  * @return vracia fragmentáciu polo¾ky v percentách
+  * @param startCluster Starting cluster of the item
+  * @param aTIndex index in aTable - into the table is written number of clusters of the directory item
+  * @return item fragmentation in percentage
 */
 float an_getFileFragmentation(unsigned long startCluster, unsigned long aTIndex)
 {
-  unsigned long cluster; /* pomocny cluster */
-  int fragmentCount = 0; /* pocet fragmentovanych clusterov */
-  int count = 0;	 /* pocet clusterov suboru; neratam start.cluster */
+  unsigned long cluster; /* temp cluster */
+  int fragmentCount = 0; /* number of fragmented clusters */
+  int count = 0;	 /* number of file clusters; starting cluster is not considered */
   
   for (cluster = startCluster, count=0; !F32_LAST(cluster); cluster = f32_getNextCluster(cluster),count++) {
     if ((startCluster != cluster) && (startCluster+1 != cluster))
@@ -100,12 +101,13 @@ float an_getFileFragmentation(unsigned long startCluster, unsigned long aTIndex)
   return (float)(((float)fragmentCount / (float)count) * 100.0);
 }
 
-/** Funkcia rekurzívne traverzuje celou adresárovou ¹truktúrou. Je súèas»ou prvej fázy analýzy disku (základná).
-  * Poèas prechodu ukladá do aTable dôle¾ité informácie o adresárovej polo¾ke, ako je ¹tartovací klaster,
-  * èíslo klastra adresára, ktorý obsahuje odkaz na danú polo¾ku a index v adresárovom klastri. Okrem toho volá
-  * pre ka¾dú polo¾ku zistenie jej percentuálnej fragmentácie. Táto sa pripoèíta ku globálnej premennej diskFragmentation.
-  * Pozor! FATka musí by» v poriadku, lebo inak mô¾e vzniknú» zacyklenie (pri krí¾ových referenciách) !
-  * @param startCluster èíslo root klastra (odkial sa bude rekurzívne traverzova»)
+/** This function recursively traverses all directory structure. It is part of the first phase of disk analysis (the basic one).
+  * During the traversation it stores into aTable important information about directory item, such as starting cluster,
+  * number of directory cluster that contains link for given item and index in the directory cluster. Besides it calls
+  * for each item the an_getFileFragmentation function (to get its percentage fragmentation). This fragmentation is added to global
+  * variable called diskFragmentation. Be careful! The FAT table has to be OK; in the other case there can be circular referrences
+  * (or cross references)!
+  * @param startCluster number of root cluster (from where should the traversation start)
 */
 void an_scanDisk(unsigned long startCluster)
 {
@@ -114,7 +116,7 @@ void an_scanDisk(unsigned long startCluster)
   unsigned char tmpAttr;
   F32_DirEntry *entries;
   
-  /* v chybnej FATke musim ratat s clusterCount miesto 0xffffff0 */
+  /* In errorneous FATk we must count with clusterCount instead of 0xffffff0 */
   if (startCluster > info.clusterCount) return;
 
   if ((entries = (F32_DirEntry *)malloc(entryCount * sizeof(F32_DirEntry))) == NULL)
@@ -124,10 +126,10 @@ void an_scanDisk(unsigned long startCluster)
     f32_readCluster(cluster, entries);
     for (index = 0; index < entryCount; index++) {
       if (!entries[index].fileName[0]) { free(entries); return; }
-      /* dalej pracujem iba s polozkami, ktore:
-           1. nie su zmazane,
-	   2. nie su to sloty (dlhe nazvy)
-	   3. neodkazuju na rodica alebo na korenovy adresar
+      /* in the next we work in items that:
+           1. are not deleted,
+	   2. are not slots (long names)
+	   3. do not point to parent or root directory
       */
       if ((entries[index].fileName[0] != 0xe5) && 
           entries[index].attributes != 0x0f &&
@@ -136,13 +138,13 @@ void an_scanDisk(unsigned long startCluster)
 	tmpAttr = entries[index].attributes & 0x10;
         tmpCluster = f32_getStartCluster(entries[index]);
 	if (tmpCluster != 0) {
-	  /* ak je polozka podadresar, rekurzivne sa vola funkcia */
+	  /* if the item is subdirectory, the function is called recursively */
           if (tmpAttr == 0x10) {
-	    /* ochrana proti zacykleniu */
+	    /* protection against infinite loop */
 	    if (tmpCluster != startCluster)
 	      an_scanDisk(tmpCluster);
 	  }
-          /* ak je startovaci cluster chybny, ignoruje polozku */
+          /* if a starting cluster is bad, it ignores the item */
           if (tmpCluster <= info.clusterCount) {
             an_addFile(tmpCluster,cluster,index);
             diskFragmentation += an_getFileFragmentation(tmpCluster, tableCount-1);
@@ -154,22 +156,22 @@ void an_scanDisk(unsigned long startCluster)
   free(entries);
 }
 
-/** Hlavná funkcia pre analýzu disku; predtým, ako zavolá funkciu an_scanDisk vykoná
-  * nejaké prípravné operácie, ako zistí poèet polo¾iek v direntry a pridá prvú hodnotu
-  * do aTable - root klaster, pre ktorý tie¾ vypoèíta jeho fragmentáciu. Po ukonèení
-  * rekurzívneho traverzovania adresárovej ¹truktúry vypoèíta celkovú percentuálnu
-  * fragmentáciu disku vydelením premennej diskFragmentation poètom polo¾iek v aTable.
+/** Main function for disk analysis; before it calls an_scanDisk function, it performs
+  * some preparation operations, such as it gets number of items in directory and adds first
+  * value into aTable - the root cluster, and computes its fragmentation. After finishing
+  * recursive traversation of directory structure it computes global percentage disk fragmentation
+  * by dividing diskFragmentation variable by number of items in aTable.
   */
 int an_analyze()
 {
   fprintf(output_stream, gettext("Analysing disk...\n"));
 
   entryCount = (bpb.BPB_SecPerClus * info.BPSector) / sizeof(F32_DirEntry);
-  /* prva faza analyzy zacina root clusterom */
+  /* first phase of analysis starts with root cluster */
   aTable = NULL;
   tableCount = 0;
   
-  /* tabulka obsahuje aj root cluster */
+  /* table contains also root cluster */
   an_addFile(bpb.BPB_RootClus, 0, 0);
   usedClusters = 0;
   diskFragmentation = an_getFileFragmentation(bpb.BPB_RootClus, 0);
@@ -177,10 +179,10 @@ int an_analyze()
   diskFragmentation /= (tableCount - 1);
 
   fprintf(output_stream, gettext("Disk is fragmented for: %.2f%%\n"), diskFragmentation);
-
-  /*POZOR! Neuvolnujem pamat tabulky teraz, ale AZ PO defragmentacii,
-    inak by vznikla chyba "Segmentation fault" vzhladom na to, ze sa
-    tabulka bude pouzivat neskor.
+ 
+  /*WARNING! We do not free memory in this time, but AFTER defragmentation,
+    otherwise we would get an error "Segmentation fault" because the table will be
+    used in later time.
   */
   return 0;
 }

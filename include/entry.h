@@ -14,7 +14,7 @@
   #include <stdio.h>
 
   #define _(STRING) gettext(STRING)
-  /* priznaky prepinacov programu */
+  /* flags for command line parameters */
   typedef struct {
     unsigned f_help      : 1;
     unsigned f_logfile   : 1;
@@ -22,7 +22,7 @@
     unsigned f_reserved  : 5;
   } __attribute__((packed)) Oflags;
 
-  /* vypis chybovej hlasky */
+  /* error message print */
   void error(int, char*, ...);
   
   extern FILE *output_stream;

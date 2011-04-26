@@ -29,34 +29,34 @@
                             ((x) <= 0xFFFFFF6L))
 
   typedef struct {
-    unsigned char BS_jmpBoot[3];	/* Instrukcia skoku - 3 byty */
+    unsigned char BS_jmpBoot[3];	/* The jump instruction - 3 bytes */
     unsigned char BS_OEMName[8];	/* "MSWIN4.1" */
-    unsigned short BPB_BytesPerSec;	/* Pocet bytov v sektore. Standardne 512 */
-    unsigned char BPB_SecPerClus;	/* Pocet sektorov v clusteri. Musi byt mocnina 2 */
-    unsigned short BPB_RsvdSecCnt;	/* Pocet rezervovanych sektorov */
-    unsigned char BPB_NumFATs;		/* Pocet kopii FAT tabuliek. Standardne 2 */
-    unsigned short BPB_RootEntCnt;	/* Pocet suborov v korenovom adresari (iba pre FAT12/16) */
-    unsigned short BPB_TotSec16;	/* Pocet sektorov pre FAT12/16 */
-    unsigned char BPB_Media;		/* Typ zariadenia; diskety 0xf0 a disky 0xf8 */
-    unsigned short BPB_FATSz16;		/* Pre FAT32 musi byt 0 */
-    unsigned short BPB_SecPerTrk;	/* Pocet sektorov na stopu (pre INT 0x13) */
-    unsigned short BPB_NumHeads;	/* Pocet hlav (pre INT 0x13) */
-    unsigned long BPB_HiddSec;		/* Pocet skrytych sektorov v particii */
-    unsigned long BPB_TotSec32;		/* Pocet sektorov v particii */
-    unsigned long BPB_FATSz32;		/* Pocet sektorov v jednej FAT tabulke */
+    unsigned short BPB_BytesPerSec;	/* Number of bytes in a sector. Default 512 */
+    unsigned char BPB_SecPerClus;	/* Number of sectors in cluster. It is the power of 2 */
+    unsigned short BPB_RsvdSecCnt;	/* Number of reserved sectors */
+    unsigned char BPB_NumFATs;		/* Number of FAT copies. Usually 2. */
+    unsigned short BPB_RootEntCnt;	/* Number of files in root directory (only for FAT12/16) */
+    unsigned short BPB_TotSec16;	/* Number of sectors for FAT12/16 */
+    unsigned char BPB_Media;		/* Device type; diskettes 0xf0 and disks 0xf8 */
+    unsigned short BPB_FATSz16;		/* For FAT32 it has to be 0 */
+    unsigned short BPB_SecPerTrk;	/* Number of sectors per track (for INT 0x13) */
+    unsigned short BPB_NumHeads;	/* Number of heads (for INT 0x13) */
+    unsigned long BPB_HiddSec;		/* Number of hidden sectors in partition */
+    unsigned long BPB_TotSec32;		/* Number of sectors in partition */
+    unsigned long BPB_FATSz32;		/* Number of sectors in single FAT table */
     unsigned char BPB_ExtFlags;
     unsigned char BPB_FSVerMajor;
-    unsigned short BPB_FSVerMinor;	/* Verzia FAT32 particie */
-    unsigned long BPB_RootClus;		/* Cislo clustera, kde sa nachadza korenovy adresar */
-    unsigned short BPB_FSInfo;		/* Cislo sektora, kde sa nachadza struktura FSInfo */
-    unsigned short BPB_BkBootSec;	/* Cislo sektora, kde sa nachadza kopia bootsektora. Obycajne 6 */
+    unsigned short BPB_FSVerMinor;	/* Version of FAT32 partition */
+    unsigned long BPB_RootClus;		/* Number of cluster where root directory is located */
+    unsigned short BPB_FSInfo;		/* Number of sector where FSInfo structure is locared. */
+    unsigned short BPB_BkBootSec;	/* Number of sector where the bootsector copy is located. Usually 6. */
     unsigned char BPB_Reserved2[12];
-    unsigned char BS_DrvNum;		/* Cislo disku pre INT13 */
+    unsigned char BS_DrvNum;		/* Number of the disk for INT13 */
     unsigned char BS_Reserved1;
-    unsigned char BS_BootSig;		/* Rozsireny priznak indikujuci, ci sa dalej nachadzaju nasledujuce 3 polozky */
-    unsigned char BS_VolID[4];		/* Seriove cislo disku */
+    unsigned char BS_BootSig;		/* Extended flag indicating if the next 3 items are actually correct */
+    unsigned char BS_VolID[4];		/* Serial number of the disk */
     unsigned char BS_VolLab[11];	/* Volume label */
-    unsigned char BS_FilSysType[8];	/* Musi byt "FAT32" */
+    unsigned char BS_FilSysType[8];	/* It has to be "FAT32" */
     unsigned char bootSectorCode[418];
     unsigned long magicNumber;
   } __attribute__((packed)) F32_BPB;
@@ -84,9 +84,9 @@
     unsigned char FATmirroring;
     unsigned short BPSector;
     unsigned short fSecClusters;
-    unsigned long firstRootSector;	/* zaciatok korenoveho adresara */
-    unsigned long firstDataSector;	/* zaciatok datovej oblasti */
-    unsigned long usedClusterCount;	/* pocet pouzitych clusterov */
+    unsigned long firstRootSector;	/* beginnig of root directory */
+    unsigned long firstDataSector;	/* beginning of data area */
+    unsigned long usedClusterCount;	/* number of used clusters */
   } __attribute__((packed)) F32_Info;
 
   extern F32_BPB bpb;
