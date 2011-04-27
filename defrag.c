@@ -339,10 +339,17 @@ int def_optimizeStartCluster(unsigned long startCluster, unsigned long beginClus
 */
 void print_bar(int size)
 {
+  static int old_percent = -1;
   double percent;
   int count, i;
-  
+ 
   percent = ((double)clusterIndex / (double)usedClusters) * 100.0;
+
+  if ((int)percent == old_percent)
+    return;
+  old_percent = (int)percent;
+
+  printf("%3d%% ", (int)percent);
   count = (int)(((double)size / 100.0) * percent);
   printf("[");
   for (i = 0; i < count-1; i++)
@@ -351,7 +358,8 @@ void print_bar(int size)
     printf(">");
   for (i = 0; i < (size - count); i++)
     printf(" ");
-  printf("]");
+  printf("]\r");
+  fflush(stdout);
 }
 
 /** The function defragments non-starting clusters of file/directory, it works only with a single cluster
@@ -389,9 +397,7 @@ unsigned long def_defragFile(unsigned long startCluster)
       }
     }
     cluster1 = cluster2;
-    printf("%3d%% ", (int)(((double)clusterIndex / (double)usedClusters) * 100.0));
     print_bar(30);
-    printf("\r");
   }
   return cluster2;
 }
@@ -440,10 +446,7 @@ int def_defragTable()
       if (F32_LAST(i)) { k++; fprintf(output_stream,"%lx", i); }
       fprintf(output_stream, gettext(" (count: %lu)\n"),k);
     }
-    printf("%3d%% ", (int)(((double)clusterIndex / (double)usedClusters) * 100.0));
     print_bar(30);
-    printf("\r");
-    fflush(stdout);
   }
   fprintf(output_stream,"\n");
 
