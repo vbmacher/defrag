@@ -32,7 +32,8 @@
     unsigned f_help      : 1;
     unsigned f_logfile   : 1;
     unsigned f_xmode	 : 1;
-    unsigned f_reserved  : 5;
+    unsigned f_analyze   : 1;
+    unsigned f_reserved  : 4;
   } __attribute__((packed)) Oflags;
 
   /* error message print */

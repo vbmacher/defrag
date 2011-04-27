@@ -61,11 +61,11 @@ int debug_mode = 0;
  */
 void print_usage(FILE *stream, int exit_code)
 {
-  fprintf(stream, gettext("Syntax: %s options image_file\n"), program_name);
-  fprintf(stream,
-		    gettext("  -h  --help			Shows this information\n"
-		    "  -l  --log_file nazov_suboru	Set program output to log file\n"
-		    "  -x  --xmode			Work in X mode (debug mode)\n"));
+  fprintf(stream, _("Syntax: %s options image_file\n"), program_name);
+  fprintf(stream, _("  -h  --help\t\t\tShows this information\n"
+		    "  -l  --log_file nazov_suboru\tSet program output to log file\n"
+		    "  -x  --xmode\t\t\tWork in X mode (debug mode)\n"
+                    "  -a  --analyze\t\t\tAnalyze only (not defragment)\n"));
   exit(exit_code);
 }
 
@@ -76,7 +76,7 @@ void print_usage(FILE *stream, int exit_code)
 void error(int p_usage, char *message, ...)
 {
   va_list args;
-  fprintf(stderr, gettext("\nERROR: "));
+  fprintf(stderr, _("\nERROR: "));
   
   va_start(args, message);
   vfprintf(stderr,message, args);
@@ -105,16 +105,17 @@ int main(int argc, char *argv[])
   int next_option; 				/* next parameter */
   int image_descriptor = 0;			/* file descriptor of image */
   const char *log_filename = NULL;		/* name of log file */
-  const char* const short_options = "hl:x";	/* string of short parameter names */
+  const char* const short_options = "hl:xa";	/* string of short parameter names */
 
   /* Array of structures that describes long parameter names */
   const struct option long_options[] = {
     { "help",		0, NULL, 'h' },
     { "log_file",	1, NULL, 'l' },
     { "xmode",		0, NULL, 'x' },
+    { "analyze",        0, NULL, 'a' },
     { NULL,		0, NULL, 0 }		/* Needed for to determine end of the array */
   };
-  Oflags flags = { 0,0,0,0 };			/* flags of the program switches */
+  Oflags flags = { 0,0,0,0,0 };			/* flags of the program switches */
 
   /* Sets up the message domain */
   setlocale(LC_ALL, "");
@@ -138,9 +139,12 @@ int main(int argc, char *argv[])
       case 'x':  /* -x or --xmode */
         flags.f_xmode = 1;
         break;
+      case 'a': /* -a or --analyze */
+        flags.f_analyze = 1;
+        break;
       case '?':
         /* Wrong parameter */
-	error(0,gettext("Wrong option, use -h or --help"));
+	error(0,_("Wrong option, use -h or --help"));
       case -1:
         break;
       default:
@@ -151,7 +155,7 @@ int main(int argc, char *argv[])
   /* If log file is used, the stdout needed to be redirected to it */
   if (flags.f_logfile)
     if ((output_stream = fopen(log_filename,"w")) == NULL)
-      error(0,gettext("Can't open log file: %s"), log_filename);
+      error(0,_("Can't open log file: %s"), log_filename);
 
   fprintf(output_stream, "FAT32 Image Defragmenter v%s,\n(c) Copyright 2006, vbmacher <pjakubco@gmail.com>\n", __F32ID_VERSION__);
   if (flags.f_help)
@@ -179,11 +183,13 @@ int main(int argc, char *argv[])
   an_analyze();
 
   /* if the disk is fragmented from min. 1% */
-  if ((int)diskFragmentation > 0)
-    /** the defragmentation itself */
-    def_defragTable();
-  else
-    fprintf(output_stream, gettext("Disk doesn't need defragmentation.\n"));
+  if (!flags.f_analyze) {
+    if ((int)diskFragmentation > 0)
+      /** the defragmentation itself */
+      def_defragTable();
+    else
+      fprintf(output_stream, gettext("Disk doesn't need defragmentation.\n"));
+  }
 
   /* un-mounting the image, freeing memory */
   an_freeTable();

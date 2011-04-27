@@ -33,6 +33,9 @@
 #include <fat32.h>
 #include <analyze.h>
 
+
+#define MAX_FILES 200000
+
 /** Table with important informations about each item in all directory structure.
  * The items contain: starting cluster, the number of directory cluster, the number of the item
  * in the directory cluster, number of clusters (this value is filled up in deep analysis).
@@ -66,12 +69,12 @@ unsigned short entryCount;
 void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned short ind)
 {
   if (aTable == NULL) {
-    if ((aTable = (aTableItem *)malloc(10000 * sizeof(aTableItem))) == NULL)
+    if ((aTable = (aTableItem *)malloc(MAX_FILES * sizeof(aTableItem))) == NULL)
       error(0, gettext("Out of memory !"));
     tableCount = 0;
   } else;
   tableCount++;
-  if (tableCount >= 10000) { free(aTable); error(0,gettext("Out of memory !"));}
+  if (tableCount >= MAX_FILES) { free(aTable); error(0,gettext("Out of memory !"));}
   aTable[tableCount-1].startCluster = startCluster;
   aTable[tableCount-1].entryCluster = entCluster;
   aTable[tableCount-1].entryIndex = ind;
