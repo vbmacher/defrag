@@ -29,6 +29,38 @@ System requirements
  is supproted. Additional translation and creation of binary localization file is needed to perform manually. Currently,
  there are supported 2 languages: English and Slovak.
 
+Testing
+-------
+
+Empty FAT32 images can be created as follows: `mkfs.msdos -v -C -F 32 -n TestFAT32 fat32.img 1000`. The arguments means:
+
+* `-v` - detailed information about progress
+* `-C` - create disk image
+* `-F <%d>` - FAT type (12, 16, 32)
+* `-n <%s>` - name of the partition (not necessary)
+* `<name of the disk image file>`
+* `<size in blocks>` - 1 block = 1 kB
+
+It is possible to mount the image to real system, as follows: `sudo mount fat32.img mnt/tst -t msdos -o loop=/dev/loop0`,
+or more simplier: `sudo mount fat32.img mnt/tst -o loop`. The `/mnt/tst` should be replaced with real mount path.
+
+The simplier variant automatically sets up the file system type and also automatically chooses the loop device. The `sudo`
+command is needed only when another user than root uses the program.
+
+You can create scripts that would be copy and delete a lot of files. This would cause disk fragmentation. When disk is
+fragmented from more than 1%, the defrag utility will work. The defrag program can be executed in two ways. It can use
+real disks, or image files. In the case of real disk, execute it as:
+
+ `defrag /dev/sda5`, for example.
+
+If the testing image is mounted, you can execute it in this way:
+
+ `defrag /dev/loop0`, for example.
+
+If no image is mounted, you can execute it with a file as parameter:
+
+ `defrag fat32.img`, for example.
+
 
 Release notes
 --------------
