@@ -1,0 +1,8 @@
+/.gitignore
+*.*~
+*.log
+*.o
+*.mo
+*.pot
+*.d
+f32id
