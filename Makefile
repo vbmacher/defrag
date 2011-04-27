@@ -1,7 +1,7 @@
-# Makefile for f32id
-# (c) Copyright 2006, vbmacher <pjakubco@gmail.com>
+# Makefile for defrag
+# (c) Copyright 2006,2011, vbmacher <pjakubco@gmail.com>
 
-TARGET = f32id
+TARGET = defrag
 OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
 CC = gcc
 CFLAGS = -Iinclude -O0 -fshort-enums -g
@@ -35,4 +35,4 @@ $(TARGET): $(OBJECTS)
 
 .PHONY: clean
 clean: 
-	rm -f *.o *.d f32id
+	rm -f *.o *.d $(TARGET)
