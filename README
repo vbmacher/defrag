@@ -1,4 +1,6 @@
 Introduction
+============
+
  The program is used for defragmentation of disk image files with FAT32 file system. It is split into several
  modules, from that each can  work with its "problem domain". These modules cooperate with each other.
  My aim was to hide as many functions as it is possible, in order I would achieve the biggest "encapsulation"
@@ -8,6 +10,8 @@ Introduction
  In case of any questions, please write me on my email pjakubco@gmail.com
 
 Program compiling
+=================
+
  In order to simplify the compilation I have used the make program and I have created Makefile file. Programs are
  written for gcc compiler and there are needed also two programs to be installed: sed and xgettext.
  
@@ -16,6 +20,7 @@ Program compiling
  there are supported 2 languages: English and Slovak.
 
 Release notes
+=============
  
         v0.1b (12.11.2006)
           Fixed all relevant bugs, command line parameters added
