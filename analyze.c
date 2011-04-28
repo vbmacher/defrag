@@ -70,11 +70,11 @@ void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned s
 {
   if (aTable == NULL) {
     if ((aTable = (aTableItem *)malloc(MAX_FILES * sizeof(aTableItem))) == NULL)
-      error(0, gettext("Out of memory !"));
+      error(0, _("Out of memory !"));
     tableCount = 0;
   } else;
   tableCount++;
-  if (tableCount >= MAX_FILES) { free(aTable); error(0,gettext("Out of memory !"));}
+  if (tableCount >= MAX_FILES) { free(aTable); error(0,_("Out of memory !"));}
   aTable[tableCount-1].startCluster = startCluster;
   aTable[tableCount-1].entryCluster = entCluster;
   aTable[tableCount-1].entryIndex = ind;
@@ -139,7 +139,7 @@ void an_scanDisk(unsigned long startCluster)
   if (startCluster > info.clusterCount) return;
 
   if ((entries = (F32_DirEntry *)malloc(entryCount * sizeof(F32_DirEntry))) == NULL)
-    error(0, gettext("Out of memory !"));
+    error(0, _("Out of memory !"));
 
   for (cluster = startCluster; !F32_LAST(cluster); cluster = f32_getNextCluster(cluster)) {
     f32_readCluster(cluster, entries);
@@ -183,7 +183,7 @@ void an_scanDisk(unsigned long startCluster)
   */
 int an_analyze()
 {
-  fprintf(output_stream, gettext("Analysing disk...\n"));
+  fprintf(output_stream, _("Analysing disk...\n"));
 
   entryCount = (bpb.BPB_SecPerClus * info.BPSector) / sizeof(F32_DirEntry);
   /* first phase of analysis starts with root cluster */
@@ -197,7 +197,7 @@ int an_analyze()
   an_scanDisk(bpb.BPB_RootClus);
   diskFragmentation /= (tableCount - 1);
 
-  fprintf(output_stream, gettext("Disk is fragmented for: %.2f%%\n"), diskFragmentation);
+  fprintf(output_stream, _("Disk is fragmented for: %.2f%%\n"), diskFragmentation);
  
   /*WARNING! We do not free memory in this time, but AFTER defragmentation,
     otherwise we would get an error "Segmentation fault" because the table will be

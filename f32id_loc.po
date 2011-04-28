@@ -66,11 +66,13 @@ msgid ""
 "  -l  --log_file nazov_suboru\tSet program output to log file\n"
 "  -x  --xmode\t\t\tWork in X mode (debug mode)\n"
 "  -a  --analyze\t\t\tAnalyze only (not defragment)\n"
+"  -f  --force\t\t\tForce the defragmentation\n"
 msgstr ""
 "  -h  --help\t\t\tZobrazi tieto informacie\n"
 "  -l  --log_file nazov_suboru\tNastavi vystup programu do log suboru\n"
 "  -x  --xmode\t\t\tPracuje v X rezime (debug rezim)\n"
 "  -a  --analyze\t\t\tSpravi iba analyzu (nedefragmentuje)\n"
+"  -f  --force\t\t\tVykona defragmentaciu aj ked este netreba\n"
 
 
 #: defrag.c:161

@@ -33,7 +33,8 @@
     unsigned f_logfile   : 1;
     unsigned f_xmode	 : 1;
     unsigned f_analyze   : 1;
-    unsigned f_reserved  : 4;
+    unsigned f_force     : 1;
+    unsigned f_reserved  : 3;
   } __attribute__((packed)) Oflags;
 
   /* error message print */

@@ -65,7 +65,8 @@ void print_usage(FILE *stream, int exit_code)
   fprintf(stream, _("  -h  --help\t\t\tShows this information\n"
 		    "  -l  --log_file nazov_suboru\tSet program output to log file\n"
 		    "  -x  --xmode\t\t\tWork in X mode (debug mode)\n"
-                    "  -a  --analyze\t\t\tAnalyze only (not defragment)\n"));
+                    "  -a  --analyze\t\t\tAnalyze only (not defragment)\n"
+                    "  -f  --force\t\t\tForce the defragmentation\n"));
   exit(exit_code);
 }
 
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
   int next_option; 				/* next parameter */
   int image_descriptor = 0;			/* file descriptor of image */
   const char *log_filename = NULL;		/* name of log file */
-  const char* const short_options = "hl:xa";	/* string of short parameter names */
+  const char* const short_options = "hl:xaf";	/* string of short parameter names */
 
   /* Array of structures that describes long parameter names */
   const struct option long_options[] = {
@@ -113,6 +114,7 @@ int main(int argc, char *argv[])
     { "log_file",	1, NULL, 'l' },
     { "xmode",		0, NULL, 'x' },
     { "analyze",        0, NULL, 'a' },
+    { "force",          0, NULL, 'f' },
     { NULL,		0, NULL, 0 }		/* Needed for to determine end of the array */
   };
   Oflags flags = { 0,0,0,0,0 };			/* flags of the program switches */
@@ -141,6 +143,9 @@ int main(int argc, char *argv[])
         break;
       case 'a': /* -a or --analyze */
         flags.f_analyze = 1;
+        break;
+      case 'f': /* -f or --force */
+        flags.f_force = 1;
         break;
       case '?':
         /* Wrong parameter */
@@ -184,7 +189,7 @@ int main(int argc, char *argv[])
 
   /* if the disk is fragmented from min. 1% */
   if (!flags.f_analyze) {
-    if ((int)diskFragmentation > 0)
+    if (flags.f_force || ((int)diskFragmentation > 0))
       /** the defragmentation itself */
       def_defragTable();
     else
