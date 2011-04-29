@@ -119,33 +119,39 @@ int def_findFirstUsable(unsigned long beginCluster, unsigned long *outCluster, u
 }
 
 /**
- * This is the most important function - it switches 2 clusters (as in FAT, as in aTable and physically, too).
- * The two clusters are switched in following way:
- * 
- * -# determine if clusters are starting. If yes, update dir entry. In case that one of the clusters is root,
- *    then it is necessary to take care of it, i.e. it is necessary to update also bpb (FAT32 can have root
- *    cluster anywhere).
- * -# update FAT - switch of values in FAT table.
- *    If one of or both clusters part of a chain, it is necessary to update its/their parents in FAT - i.e. to
- *    switch parent links. In a case that FAT is bad and some cluster links to a free cluster, very serious error
- *    will arise that leads to further and worse damage of FAT, because parent will not be found parent (according
- *    to next conditions) and there be created cross-reference. Therefore there is possible to use two options:
- *    -# assume that FAT is OK and use correct condition for parent searching;
- *    -# use half (but enough) condition and do not require that clusters should not point to 0.
- *    .
- *    The correct condition for parent searching: If cluster is not starting and its value is not 0, find parent.<br/>
- *    The half-condition for parent searching: If cluster is not starting, find parent.
+ * The function switches 2 clusters.
  *
- *    In my solution I used half-condition only, therefore I had to modify also the function for finding the parent.
- *    After these operations, the cluster values are switched in the FAT table - here I have to take care for infinite
- *    loop, as it is shown in the following example:
+ * Clusters can be starting, or part in a file chain. They can be directories, slots or file data.
+ *
+ * If a cluster is starting:
+ *
+ * -# Update dir entry -> set the other cluster to be starting in the directory entry.
+ * -# If it is root, update also bpb (FAT32 can have root cluster anywhere).
+ *
+ * If a cluster is directory:
+ *
+ * -# Point the "." direntry of that cluster to the other cluster
+ * -# Point the ".." direntry of that cluster to the parent of this cluster
+ *
+ * If a cluster is part of a chain
+ *
+ * -# Update its parent in FAT to point to the other cluster
+ *
+ * The two clusters are switched by:
+ *
+ * -# Switching the cluster values in FAT table.
+ * -# Updating values in aTable (all files having entryCluster set to the one cluster
+ *    must point to the other cluster)
+ * -# Switching real data in clusters
+ *
+ * There must be taken care for infinite loop, as it is shown in the following example:
  *
  *    \code
  *      defragmented:  Y -> Y -> Y -> N -> N -> N -> N
  *      chain       : ...->213->214->2c4->215->980->...
  *    \endcode
  *
- *    And I want to switch 2c4<->215. Firstly I try normal switch:
+ * And we want to switch 2c4<->215. Firstly we try normal switch:
  *    - 2c4 is not starting, its parent is 214 (i.e. 214 points at 2c4)
  *    - 215 is not starting, its parent is 2c4 (i.e. 2c4 points at 215)
  *    .
@@ -153,7 +159,7 @@ int def_findFirstUsable(unsigned long beginCluster, unsigned long *outCluster, u
  *      - 214 will point at 215
  *      - 2c4 will point at 980
  *      .
- *    and witching FAT values: 
+ *    and switching FAT values: 
  *    - cluster 2c4 originally pointing at 215 will point at 980 (on value that 215 cluster is pointing at)
  *    - cluster 215 originally pointing at 980 will point at 215 (on value that 2c4 cluster is pointing at)
  *    .
@@ -163,17 +169,16 @@ int def_findFirstUsable(unsigned long beginCluster, unsigned long *outCluster, u
  *       2c4->980->...
  *    \endcode
  *    Therefore I need to perform a precaution. In another case the classic switch will be performed.
- * -# update values in aTable
- * -# last step is switching the data in clusters
  *
- * @param cluster1 number of first cluster
- * @param cluster2 number of sectond cluster
- * @return function returns 0 if there was no error.
+ * @param cluster1
+ *   Number of the first cluster
+ * @param cluster2
+ *   Number of the sectond cluster
  */
-int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
+void def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 {
   unsigned long isStarting1, isStarting2; /* if the clusters are starting. 
-                                             If yes, they hold (index + 1)
+                                             If yes, they will hold (index + 1)
 					     in table aTable
 					  */
   unsigned long tmpVal1, tmpVal2;
@@ -183,7 +188,9 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
   if (debug_mode)
     fprintf(output_stream,_("  (def_switchClusters) 0x%lx <=> 0x%lx\n"), cluster1, cluster2);
 
-  if (cluster1 == cluster2) return 0;
+  if (cluster1 == cluster2)
+    return;
+
   /* 1. find out if clusters are starting. If yes, update dir entry. */
   /* be careful on root! It can be one of the clusters */
     def_isStarting(cluster1, &isStarting1);
@@ -202,22 +209,19 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       if (!aTable[isStarting1-1].entryCluster) {
         /* the first cluster is root */
         if (debug_mode)
-          fprintf(output_stream, _("    1:0x%lx= root\n"), cluster1);
+          fprintf(output_stream, "    1:0x%lx=(root)\n", cluster1);
 	bpb.BPB_RootClus = cluster2;
 	d_writeSectors(0, (char*)&bpb, 1);
       } else {
         f32_readCluster(aTable[isStarting1-1].entryCluster, entries);
         if (debug_mode) {
           // what we know about the clusters.
-          fprintf(output_stream, _("    1:0x%lx= start (file %lx); dir= 0x%lx\n"), 
-            cluster1, isStarting1-1, aTable[isStarting1-1].entryCluster);
-          fprintf(output_stream, _("    1:dir.entry[%d].startCluster= 0x%lx (equal to 0x%lx)\n"),
-            aTable[isStarting1-1].entryIndex, f32_getStartCluster(entries[aTable[isStarting1-1].entryIndex]), cluster1);
-          fprintf(output_stream,   "    1:dir.entry[%d].fileName = '", aTable[isStarting1-1].entryIndex);
+          fprintf(output_stream, "    1:'");
           for (i = 0; i < 8; i++)
             fprintf(output_stream,   "%c", entries[aTable[isStarting1-1].entryIndex].fileName[i]);
-          fprintf(output_stream,   "'\n    1:(new)dir.entry[%d].startCluster= 0x%lx\n",
-            aTable[isStarting1-1].entryIndex, cluster2);
+          fprintf(output_stream, _("' 0x%lx=(files[%lx]); dir=0x%lx.entry=%d; start=0x%lx (new 0x%lx)\n"),
+            cluster1, isStarting1-1, aTable[isStarting1-1].entryCluster, aTable[isStarting1-1].entryIndex,
+            f32_getStartCluster(entries[aTable[isStarting1-1].entryIndex]), cluster2);
 	}
         f32_setStartCluster(cluster2,&entries[aTable[isStarting1-1].entryIndex]);
         f32_writeCluster(aTable[isStarting1-1].entryCluster, entries);
@@ -226,23 +230,19 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     if (isStarting2) {
       if (!aTable[isStarting2-1].entryCluster) {
         if (debug_mode)
-          fprintf(output_stream, _("  2:0x%lx= root\n"), cluster2);
+          fprintf(output_stream, "  2:0x%lx=(root)\n", cluster2);
         /* second cluster is root */
 	bpb.BPB_RootClus = cluster1;
 	d_writeSectors(0, (char*)&bpb, 1);
       } else {
         f32_readCluster(aTable[isStarting2-1].entryCluster, entries);
 	if (debug_mode) {
-          fprintf(output_stream, _("    2:0x%lx= start (file %lx); dir= 0x%lx\n"),
-            cluster2, isStarting2-1, aTable[isStarting2-1].entryCluster);
-          fprintf(output_stream, _("    2:dir.entry[%d].startCluster= 0x%lx (equal to 0x%lx)\n"),
-            aTable[isStarting2-1].entryIndex, f32_getStartCluster(entries[aTable[isStarting2-1].entryIndex]), cluster2);
-
-          fprintf(output_stream, "    2:dir.entry[%d].fileName = '", aTable[isStarting2-1].entryIndex);
+          fprintf(output_stream, "    2:'");
           for (i = 0; i < 8; i++)
             fprintf(output_stream, "%c", entries[aTable[isStarting2-1].entryIndex].fileName[i]);
-          fprintf(output_stream, "'\n    2:(new)dir.entry[%d].startCluster= 0x%lx\n",
-            aTable[isStarting2-1].entryIndex, cluster1);
+          fprintf(output_stream, _("' 0x%lx=(files[%lx]); dir=0x%lx.entry=%d; start=0x%lx (new 0x%lx)\n"),
+            cluster2, isStarting2-1, aTable[isStarting2-1].entryCluster, aTable[isStarting2-1].entryIndex,
+            f32_getStartCluster(entries[aTable[isStarting2-1].entryIndex]), cluster1);
 	}
         f32_setStartCluster(cluster1,&entries[aTable[isStarting2-1].entryIndex]);
         f32_writeCluster(aTable[isStarting2-1].entryCluster, entries);
@@ -260,12 +260,10 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 
        In a case that FAT is wrong and some cluster points at free cluster (i.e. clus1val or clus2val = 0),
        cruel error will be created, because the parent won't be found. */
-////    if (!isStarting1 && clus1val)
-    if (!isStarting1)
+    if (!isStarting1 && clus1val)
       tmpVal1 = def_findParent(cluster1);
     else tmpVal1 = 0;
-    if (!isStarting2)
-////    if (!isStarting2 && clus2val)
+    if (!isStarting2 && clus2val)
       tmpVal2 = def_findParent(cluster2);
     else tmpVal2 = 0;
     if (tmpVal1) {
@@ -280,16 +278,7 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     }
     /* switching FAT values */
     if (clus1val == cluster2) {
-      /* against circullar referrences
-         example:
-         defrag:  Y -> Y -> N -> N -> N -> N
-         chain : ...->214->2c4->215->980->...
-
-         want to switch 2c4<->215
-	 after normal switch it will be: 214->215->215->215->...
-	                                 2c4->980->...
-	 therefore I need to perform a precaution.
-      */
+      /* precaution */
       f32_writeFAT(cluster1, clus2val);
       f32_writeFAT(cluster2, cluster1);
     } else if (clus2val == cluster1) {
@@ -302,7 +291,7 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       f32_writeFAT(cluster2, clus1val);
     }
 
-    /* Update parents of "." if one of starting cluster was directory*/
+    /* Update "." and ".." entries if one of starting cluster was directory*/
     if (isStarting1 && aTable[isStarting1-1].isDir) {
       // cluster1 will point to cluster2
       f32_readCluster(cluster1, entries);
@@ -315,8 +304,9 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
           f32_setStartCluster(cluster2,&entries[i]);
           f32_writeCluster(cluster1, entries);
           break;
+        } else if (!memcmp(entries[i].fileName,"..      ",8)) {
+          // TODO: what with ".." ?
         }
-        // TODO: what with ".." ?
       }
     }
     if (isStarting2 && aTable[isStarting2-1].isDir) {
@@ -331,8 +321,9 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
           f32_setStartCluster(cluster1,&entries[i]);
           f32_writeCluster(cluster2, entries);
           break;
+        } else if (!memcmp(entries[i].fileName,"..      ",8)) {
+          // TODO: what with ".." ?
         }
-        // TODO: what with ".." ?
       }
     }
 
@@ -346,16 +337,16 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
        also this value */
     for (tmpVal1 = 0; tmpVal1 < tableCount; tmpVal1++) {
       if (aTable[tmpVal1].entryCluster == cluster1) {
-        unsigned long i = aTable[tmpVal1].entryCluster;
+        tmpVal2 = aTable[tmpVal1].entryCluster;
         aTable[tmpVal1].entryCluster = cluster2;
         if (debug_mode)
-          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, i,cluster2);
+          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, tmpVal2,cluster2);
       }
       else if (aTable[tmpVal1].entryCluster == cluster2) {
-        unsigned long i = aTable[tmpVal1].entryCluster;
+        tmpVal2 = aTable[tmpVal1].entryCluster;
         aTable[tmpVal1].entryCluster = cluster1;
         if (debug_mode)
-          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, i, cluster1);
+          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, tmpVal2, cluster1);
       }
     }
 
@@ -371,8 +362,6 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       i = def_findParent(cluster2);
       fprintf(output_stream, _("    2:(new)0x%lx.parent= 0x%lx\n"), cluster2, i);
     }
-
-  return 0;
 }
 
 
