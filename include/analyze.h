@@ -31,6 +31,7 @@
     unsigned short entryIndex;	/* number of an entry in cluster */
     unsigned long startCluster;	/* number of starting sector */
     unsigned long clusterCount; /* number of clusters */
+    unsigned char isDir;        /* whether it is directory or file */
   } __attribute__((packed)) aTableItem;
 
   extern aTableItem *aTable;

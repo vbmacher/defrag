@@ -178,6 +178,7 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 					  */
   unsigned long tmpVal1, tmpVal2;
   unsigned long clus1val, clus2val;
+  int i; // temp variable
 
   if (debug_mode)
     fprintf(output_stream,_("  (def_switchClusters) 0x%lx <=> 0x%lx\n"), cluster1, cluster2);
@@ -187,19 +188,36 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
   /* be careful on root! It can be one of the clusters */
     def_isStarting(cluster1, &isStarting1);
     def_isStarting(cluster2, &isStarting2);
+
+    if (debug_mode) {
+      // what we know about the clusters.
+      tmpVal1 = def_findParent(cluster1);
+      fprintf(output_stream, _("    1:parent= 0x%lx\n"), tmpVal1);
+      tmpVal1 = def_findParent(cluster2);
+      fprintf(output_stream, _("    2:parent= 0x%lx\n"), tmpVal1);
+      tmpVal1 = 0;
+    }
     
     if (isStarting1) {
       if (!aTable[isStarting1-1].entryCluster) {
         /* the first cluster is root */
         if (debug_mode)
-          fprintf(output_stream, _("    0x%lx = Root (1)\n"), cluster1);
+          fprintf(output_stream, _("    1:0x%lx= root\n"), cluster1);
 	bpb.BPB_RootClus = cluster2;
 	d_writeSectors(0, (char*)&bpb, 1);
       } else {
         f32_readCluster(aTable[isStarting1-1].entryCluster, entries);
         if (debug_mode) {
-          fprintf(output_stream, _("    0x%lx = Start (1); aTable[%lu].entryCluster = 0x%lx\n"), cluster1, isStarting1-1, aTable[isStarting1-1].entryCluster);
-          fprintf(output_stream, _("      Start 0x%lx (should equal to 0x%lx); will be now 0x%lx (2)\n"), cluster1, f32_getStartCluster(entries[aTable[isStarting1-1].entryIndex]), cluster2);
+          // what we know about the clusters.
+          fprintf(output_stream, _("    1:0x%lx= start (file %lx); dir= 0x%lx\n"), 
+            cluster1, isStarting1-1, aTable[isStarting1-1].entryCluster);
+          fprintf(output_stream, _("    1:dir.entry[%d].startCluster= 0x%lx (equal to 0x%lx)\n"),
+            aTable[isStarting1-1].entryIndex, f32_getStartCluster(entries[aTable[isStarting1-1].entryIndex]), cluster1);
+          fprintf(output_stream,   "    1:dir.entry[%d].fileName = '", aTable[isStarting1-1].entryIndex);
+          for (i = 0; i < 8; i++)
+            fprintf(output_stream,   "%c", entries[aTable[isStarting1-1].entryIndex].fileName[i]);
+          fprintf(output_stream,   "'\n    1:(new)dir.entry[%d].startCluster= 0x%lx\n",
+            aTable[isStarting1-1].entryIndex, cluster2);
 	}
         f32_setStartCluster(cluster2,&entries[aTable[isStarting1-1].entryIndex]);
         f32_writeCluster(aTable[isStarting1-1].entryCluster, entries);
@@ -208,15 +226,23 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     if (isStarting2) {
       if (!aTable[isStarting2-1].entryCluster) {
         if (debug_mode)
-          fprintf(output_stream, _("  0x%lx = Root (2)\n"), cluster2);
+          fprintf(output_stream, _("  2:0x%lx= root\n"), cluster2);
         /* second cluster is root */
 	bpb.BPB_RootClus = cluster1;
 	d_writeSectors(0, (char*)&bpb, 1);
       } else {
         f32_readCluster(aTable[isStarting2-1].entryCluster, entries);
 	if (debug_mode) {
-          fprintf(output_stream, _("  0x%lx = Start (2); aTable[%lu].entryCluster = 0x%lx\n"), cluster2, isStarting2-1, aTable[isStarting2-1].entryCluster);
-          fprintf(output_stream, _("    Start 0x%lx (should equal to 0x%lx); will be now 0x%lx (1)\n"), cluster2, f32_getStartCluster(entries[aTable[isStarting2-1].entryIndex]), cluster1);
+          fprintf(output_stream, _("    2:0x%lx= start (file %lx); dir= 0x%lx\n"),
+            cluster2, isStarting2-1, aTable[isStarting2-1].entryCluster);
+          fprintf(output_stream, _("    2:dir.entry[%d].startCluster= 0x%lx (equal to 0x%lx)\n"),
+            aTable[isStarting2-1].entryIndex, f32_getStartCluster(entries[aTable[isStarting2-1].entryIndex]), cluster2);
+
+          fprintf(output_stream, "    2:dir.entry[%d].fileName = '", aTable[isStarting2-1].entryIndex);
+          for (i = 0; i < 8; i++)
+            fprintf(output_stream, "%c", entries[aTable[isStarting2-1].entryIndex].fileName[i]);
+          fprintf(output_stream, "'\n    2:(new)dir.entry[%d].startCluster= 0x%lx\n",
+            aTable[isStarting2-1].entryIndex, cluster1);
 	}
         f32_setStartCluster(cluster1,&entries[aTable[isStarting2-1].entryIndex]);
         f32_writeCluster(aTable[isStarting2-1].entryCluster, entries);
@@ -226,30 +252,30 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     if (f32_readFAT(cluster1, &clus1val)) error(0,_("Can't read from FAT !"));
     if (f32_readFAT(cluster2, &clus2val)) error(0,_("Can't read from FAT !"));
     if (debug_mode) {
-      fprintf(output_stream, _("  0x%lx (1).value = %lx\n"), cluster1, clus1val);
-      fprintf(output_stream, _("  0x%lx (2).value = %lx\n"), cluster2, clus2val);
+      fprintf(output_stream, _("    1:0x%lx.value= %lx\n"), cluster1, clus1val);
+      fprintf(output_stream, _("    2:0x%lx.value= %lx\n"), cluster2, clus2val);
     }
     /* If some or both clusters were part of the chain, it is necessary to update its/their
        parents in FAT.
 
        In a case that FAT is wrong and some cluster points at free cluster (i.e. clus1val or clus2val = 0),
        cruel error will be created, because the parent won't be found. */
-//    if (!isStarting1 && clus1val)
+////    if (!isStarting1 && clus1val)
     if (!isStarting1)
       tmpVal1 = def_findParent(cluster1);
     else tmpVal1 = 0;
     if (!isStarting2)
-//    if (!isStarting2 && clus2val)
+////    if (!isStarting2 && clus2val)
       tmpVal2 = def_findParent(cluster2);
     else tmpVal2 = 0;
     if (tmpVal1) {
       if (debug_mode)
-        fprintf(output_stream, _("    0x%lx (1).parent = 0x%lx\n"), cluster1, tmpVal1);
+        fprintf(output_stream, _("    1:0x%lx.parent= 0x%lx\n"), cluster1, tmpVal1);
       f32_writeFAT(tmpVal1, cluster2);
     }
     if (tmpVal2) {
       if (debug_mode)
-        fprintf(output_stream, _("    0x%lx (2).parent = 0x%lx\n"), cluster2, tmpVal2);
+        fprintf(output_stream, _("    2:0x%lx.parent= 0x%lx\n"), cluster2, tmpVal2);
       f32_writeFAT(tmpVal2, cluster1);
     }
     /* switching FAT values */
@@ -274,31 +300,77 @@ int def_switchClusters(unsigned long cluster1, unsigned long cluster2)
     } else {
       f32_writeFAT(cluster1, clus2val);
       f32_writeFAT(cluster2, clus1val);
-    } 
+    }
+
+    /* Update parents of "." if one of starting cluster was directory*/
+    if (isStarting1 && aTable[isStarting1-1].isDir) {
+      // cluster1 will point to cluster2
+      f32_readCluster(cluster1, entries);
+      for (i = 0; i < entryCount; i++) {
+        if (!entries[i].fileName[0]) break;
+        if (entries[i].fileName[0] == 0xe5) continue; // deleted
+        if (entries[i].attributes == 0x0f) continue;  // slot
+        if (!memcmp(entries[i].fileName,".       ",8)) {
+          // found it
+          f32_setStartCluster(cluster2,&entries[i]);
+          f32_writeCluster(cluster1, entries);
+          break;
+        }
+        // TODO: what with ".." ?
+      }
+    }
+    if (isStarting2 && aTable[isStarting2-1].isDir) {
+      // cluster2 will point to cluster1
+      f32_readCluster(cluster2, entries);
+      for (i = 0; i < entryCount; i++) {
+        if (!entries[i].fileName[0]) break;
+        if (entries[i].fileName[0] == 0xe5) continue; // deleted
+        if (entries[i].attributes == 0x0f) continue;  // slot
+        if (!memcmp(entries[i].fileName,".       ",8)) {
+          // found it
+          f32_setStartCluster(cluster1,&entries[i]);
+          f32_writeCluster(cluster2, entries);
+          break;
+        }
+        // TODO: what with ".." ?
+      }
+    }
+
     /* update aTable */
-    if (isStarting1) {
-      if (debug_mode)
-        fprintf(output_stream, _("  (New start cluster (2)) aTable[%lu].startCluster = 0x%lx\n"), isStarting1-1, cluster2);
+    if (isStarting1)
       aTable[isStarting1-1].startCluster = cluster2;
-    }
-    if (isStarting2) {
-      if (debug_mode)
-        fprintf(output_stream, _("  (New start cluster (1)) aTable[%lu].startCluster = 0x%lx\n"), isStarting2-1, cluster1);
+    if (isStarting2)
       aTable[isStarting2-1].startCluster = cluster1;
-    }
+
     /* If some of switched clusters was direntry of some starting cluster in aTable, we have to update
        also this value */
-    for (tmpVal1 = 0; tmpVal1 < tableCount; tmpVal1++)
-      if (aTable[tmpVal1].entryCluster == cluster1)
+    for (tmpVal1 = 0; tmpVal1 < tableCount; tmpVal1++) {
+      if (aTable[tmpVal1].entryCluster == cluster1) {
+        unsigned long i = aTable[tmpVal1].entryCluster;
         aTable[tmpVal1].entryCluster = cluster2;
-      else if (aTable[tmpVal1].entryCluster == cluster2)
+        if (debug_mode)
+          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, i,cluster2);
+      }
+      else if (aTable[tmpVal1].entryCluster == cluster2) {
+        unsigned long i = aTable[tmpVal1].entryCluster;
         aTable[tmpVal1].entryCluster = cluster1;
+        if (debug_mode)
+          fprintf(output_stream, "    file[%lu].entryCluster (originally 0x%lx) = 0x%lx\n", tmpVal1, i, cluster1);
+      }
+    }
 
   /* 3. physicall switch */
     f32_readCluster(cluster1, cacheCluster1);
     f32_readCluster(cluster2, cacheCluster2);
     f32_writeCluster(cluster1, cacheCluster2);
     f32_writeCluster(cluster2, cacheCluster1);
+
+    if (debug_mode) {
+      i = def_findParent(cluster1);
+      fprintf(output_stream, _("    1:(new)0x%lx.parent= 0x%lx\n"), cluster1, i);
+      i = def_findParent(cluster2);
+      fprintf(output_stream, _("    2:(new)0x%lx.parent= 0x%lx\n"), cluster2, i);
+    }
 
   return 0;
 }
@@ -323,7 +395,7 @@ int def_optimizeStartCluster(unsigned long startCluster, unsigned long beginClus
     return 1;
   if (startCluster > newCluster) {
     if (debug_mode)
-      fprintf(output_stream, _("(def_placeStartCluster) moving 0x%lx to 0x%lx\n"), startCluster, newCluster);
+      fprintf(output_stream, _("(def_optimizeStartCluster) moving 0x%lx to 0x%lx\n"), startCluster, newCluster);
     def_switchClusters(startCluster, newCluster);
     if (newCluster > beginCluster)
       *outputCluster = newCluster;
@@ -426,15 +498,14 @@ int def_defragTable()
   if ((cacheCluster1 = (unsigned char*)malloc(bpb.BPB_SecPerClus * info.BPSector * sizeof(unsigned char))) == NULL) error(0, _("Out of memory !"));
   if ((cacheCluster2 = (unsigned char*)malloc(bpb.BPB_SecPerClus * info.BPSector * sizeof(unsigned char))) == NULL) error(0, _("Out of memory !"));
 
+  if (debug_mode) {
+    fprintf(output_stream, _("(def_defragTable) original aTable values (%lu): "), tableCount);
+    for (tableIndex = 0; tableIndex < tableCount; tableIndex++)
+      fprintf(output_stream, "%lx | ", aTable[tableIndex].startCluster);
+  }
+
   clusterIndex = 0;
   for (tableIndex = 0; tableIndex < tableCount; tableIndex++) {
-    if (debug_mode) {
-      fprintf(output_stream, _("(def_defragTable) filechain for %lu: "), tableIndex);
-      for (i = aTable[tableIndex].startCluster, j=0; i && (!F32_LAST(i)); i = f32_getNextCluster(i), j++)
-        fprintf(output_stream, "%lx -> ", i);
-      if (F32_LAST(i)) { j++; fprintf(output_stream, "%lx", i); }
-      fprintf(output_stream,_("(count: %lu)\n"),j);
-    }
     /* Optimally places starting cluster, it can cause additional fragmentation */
     defClus++;
     def_optimizeStartCluster(aTable[tableIndex].startCluster, defClus, &defClus);
@@ -442,13 +513,6 @@ int def_defragTable()
     /* Defragmentation of non-starting clusters */
     defClus = def_defragFile(aTable[tableIndex].startCluster);
 
-    if (debug_mode) {
-      fprintf(output_stream,_("(def_defragTable) new filechain for %lu: "), tableIndex);
-      for (i = aTable[tableIndex].startCluster, k=0; i < 0xffffff0; i = f32_getNextCluster(i),k++)
-        fprintf(output_stream, "%lx -> ", i);
-      if (F32_LAST(i)) { k++; fprintf(output_stream,"%lx", i); }
-      fprintf(output_stream, _(" (count: %lu)\n"),k);
-    }
     if (!debug_mode)
       print_bar(30);
   }

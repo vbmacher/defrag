@@ -98,54 +98,43 @@ int f32_mount(int image_descriptor)
 
   if (debug_mode) {
     int i;
-
-    fprintf(output_stream, _("(f32_mount) BIOS Parameter Block (BPB):\n"));
-    fprintf(output_stream, _("(f32_mount) BPB_jmpBoot: '%s', offset: %x, size: %d\n"), bpb.BS_jmpBoot, (int)((int)(&bpb.BS_jmpBoot) - (int)(&bpb)), sizeof(bpb.BS_jmpBoot));
-    fprintf(output_stream, _("(f32_mount) BS_OEMName: '%s', offset: %x, size: %d\n"), bpb.BS_OEMName, (int)((int)(&bpb.BS_OEMName) - (int)(&bpb)), sizeof(bpb.BS_OEMName));
-    fprintf(output_stream, _("(f32_mount) BPB_BytesPerSec: %d, offset: %x, size: %d\n"), (short)bpb.BPB_BytesPerSec, (int)((int)(&bpb.BPB_BytesPerSec) - (int)(&bpb)), sizeof(bpb.BPB_BytesPerSec));
-    fprintf(output_stream, _("(f32_mount) BPB_SecPerClus: %u, offset: %x, size: %d\n"), bpb.BPB_SecPerClus, (int)((int)(&bpb.BPB_SecPerClus) - (int)(&bpb)), sizeof(bpb.BPB_SecPerClus));
-    fprintf(output_stream, _("(f32_mount) BPB_RsvdSecCnt: %d, offset: %x, size: %d\n"), bpb.BPB_RsvdSecCnt, (int)((int)(&bpb.BPB_RsvdSecCnt) - (int)(&bpb)), sizeof(bpb.BPB_RsvdSecCnt));
-    fprintf(output_stream, _("(f32_mount) BPB_NumFATs: %d, offset: %x, size: %d\n"), bpb.BPB_NumFATs, (int)((int)(&bpb.BPB_NumFATs) - (int)(&bpb)), sizeof(bpb.BPB_NumFATs));
-    fprintf(output_stream, _("(f32_mount) BPB_RootEntCnt: %d, offset: %x, size: %d\n"), bpb.BPB_RootEntCnt, (int)((int)(&bpb.BPB_RootEntCnt) - (int)(&bpb)), sizeof(bpb.BPB_RootEntCnt));
-    fprintf(output_stream, _("(f32_mount) BPB_TotSec16: %d, offset: %x, size: %d\n"), bpb.BPB_TotSec16, (int)((int)(&bpb.BPB_TotSec16) - (int)(&bpb)), sizeof(bpb.BPB_TotSec16));
-    fprintf(output_stream, _("(f32_mount) BPB_Media: %x, offset: %x, size: %d\n"), bpb.BPB_Media, (int)((int)(&bpb.BPB_Media) - (int)(&bpb)), sizeof(bpb.BPB_Media));
-    fprintf(output_stream, _("(f32_mount) BPB_FATSz16: %d, offset: %x, size: %d\n"), bpb.BPB_FATSz16, (int)((int)(&bpb.BPB_FATSz16) - (int)(&bpb)), sizeof(bpb.BPB_FATSz16));
-    fprintf(output_stream, _("(f32_mount) BPB_SePerTrk: %d, offset: %x, size: %d\n"), bpb.BPB_SecPerTrk, (int)((int)(&bpb.BPB_SecPerTrk) - (int)(&bpb)), sizeof(bpb.BPB_SecPerTrk));
-    fprintf(output_stream, _("(f32_mount) BPB_NumHeads: %d, offset: %x, size: %d\n"), bpb.BPB_NumHeads, (int)((int)(&bpb.BPB_NumHeads) - (int)(&bpb)), sizeof(bpb.BPB_NumHeads));
-    fprintf(output_stream, _("(f32_mount) BPB_HiddSec: %d, offset: %x, size: %d\n"), bpb.BPB_HiddSec, (int)((int)(&bpb.BPB_HiddSec) - (int)(&bpb)), sizeof(bpb.BPB_HiddSec));
-    fprintf(output_stream, _("(f32_mount) BPB_TotSec32: %ld, offset: %x, size: %d\n"), bpb.BPB_TotSec32, (int)((int)(&bpb.BPB_TotSec32) - (int)(&bpb)), sizeof(bpb.BPB_TotSec32));
-    fprintf(output_stream, _("(f32_mount) BPB_FATSz32: %ld, offset: %x, size: %d\n"), bpb.BPB_FATSz32, (int)((int)(&bpb.BPB_FATSz32) - (int)(&bpb)), sizeof(bpb.BPB_FATSz32));
-    fprintf(output_stream, _("(f32_mount) BPB_ExtFlags: %d, offset: %x, size: %d\n"), bpb.BPB_ExtFlags, (int)((int)(&bpb.BPB_ExtFlags) - (int)(&bpb)), sizeof(bpb.BPB_ExtFlags));
-    fprintf(output_stream, _("(f32_mount) BPB_FSVer major: %d, offset: %x, size: %d\n"), bpb.BPB_FSVerMajor, (int)((int)(&bpb.BPB_FSVerMajor) - (int)(&bpb)), sizeof(bpb.BPB_FSVerMajor));
-    fprintf(output_stream, _("(f32_mount) BPB_FSVer minor: %d, offset: %x, size: %d\n"), bpb.BPB_FSVerMinor, (int)((int)(&bpb.BPB_FSVerMinor) - (int)(&bpb)), sizeof(bpb.BPB_FSVerMinor));
-    fprintf(output_stream, _("(f32_mount) BPB_RootClus: %ld, offset: %x, size: %d\n"), bpb.BPB_RootClus, (int)((int)(&bpb.BPB_RootClus) - (int)(&bpb)), sizeof(bpb.BPB_RootClus));
-    fprintf(output_stream, _("(f32_mount) BPB_FSInfo: %d, offset: %x, size: %d\n"), bpb.BPB_FSInfo, (int)((int)(&bpb.BPB_FSInfo) - (int)(&bpb)), sizeof(bpb.BPB_FSInfo));
-    fprintf(output_stream, _("(f32_mount) BPB_BkBootSec: %d, offset: %x, size: %d\n"), bpb.BPB_BkBootSec, (int)((int)(&bpb.BPB_BkBootSec) - (int)(&bpb)), sizeof(bpb.BPB_BkBootSec));
-    fprintf(output_stream, _("(f32_mount) BPB_Reserved: '%s', offset: %x, size: %d\n"), bpb.BPB_Reserved2, (int)((int)(&bpb.BPB_Reserved2) - (int)(&bpb)), sizeof(bpb.BPB_Reserved2));
-    fprintf(output_stream, _("(f32_mount) BS_DrvNum: %d, offset: %x, size: %d\n"), bpb.BS_DrvNum, (int)((int)(&bpb.BS_DrvNum) - (int)(&bpb)), sizeof(bpb.BS_DrvNum));
-    fprintf(output_stream, _("(f32_mount) BS_Reserved1: %d, offset: %x, size: %d\n"), bpb.BS_Reserved1, (int)((int)(&bpb.BS_Reserved1) - (int)(&bpb)), sizeof(bpb.BS_Reserved1));
-    fprintf(output_stream, _("(f32_mount) BS_BootSig: %d, offset: %x, size: %d\n"), bpb.BS_BootSig, (int)((int)(&bpb.BS_BootSig) - (int)(&bpb)), sizeof(bpb.BS_BootSig));
-    fprintf(output_stream, _("(f32_mount) BS_VolID: %ld, offset: %x, size: %d\n"), bpb.BS_VolID, (int)((int)(&bpb.BS_VolID) - (int)(&bpb)), sizeof(bpb.BS_VolID));
-
-    fprintf(output_stream, "(f32_mount) BS_VolLab: '");
+    fprintf(output_stream, _("(f32_mount) Bytes per Sector: %d\n"), (short)bpb.BPB_BytesPerSec);
+    fprintf(output_stream, _("(f32_mount) Sectors per Cluster: %u\n"), bpb.BPB_SecPerClus);
+    fprintf(output_stream, _("(f32_mount) Reserved sectors count: %d\n"), bpb.BPB_RsvdSecCnt);
+    fprintf(output_stream, _("(f32_mount) Number of FATs: %d\n"), bpb.BPB_NumFATs);
+    fprintf(output_stream, _("(f32_mount) Root entries count: %d\n"), bpb.BPB_RootEntCnt);
+    fprintf(output_stream, _("(f32_mount) Media: %x\n"), bpb.BPB_Media);
+    fprintf(output_stream, _("(f32_mount) Sectors per track: %d\n"), bpb.BPB_SecPerTrk);
+    fprintf(output_stream, _("(f32_mount) Total sectors 32: %ld\n"), bpb.BPB_TotSec32);
+    fprintf(output_stream, _("(f32_mount) FAT size 32: %ld\n"), bpb.BPB_FATSz32);
+    fprintf(output_stream, _("(f32_mount) FS version major: %d\n"), bpb.BPB_FSVerMajor);
+    fprintf(output_stream, _("(f32_mount) FS version minor: %d\n"), bpb.BPB_FSVerMinor);
+    fprintf(output_stream, _("(f32_mount) Root clusters: %ld\n"), bpb.BPB_RootClus);
+    fprintf(output_stream, _("(f32_mount) Volume ID: %ld\n"), bpb.BS_VolID);
+    fprintf(output_stream, "(f32_mount) Volume label: '");
     for (i = 0; i < sizeof(bpb.BS_VolLab); i++)
       fprintf(output_stream, "%c", bpb.BS_VolLab[i]);
-    fprintf(output_stream, "', offset: %x, size: %d\n", (int)((int)(&bpb.BS_VolLab) - (int)(&bpb)), sizeof(bpb.BS_VolLab));
+    fprintf(output_stream, "'\n");
 
-    fprintf(output_stream, "(f32_mount) BS_FilSysType: '");
+    fprintf(output_stream, "(f32_mount) File system type: '");
     for (i = 0; i < sizeof(bpb.BS_FilSysType); i++)
       fprintf(output_stream, "%c", bpb.BS_FilSysType[i]);
-    fprintf(output_stream, "', offset: %x, size: %d\n", (int)((int)(&bpb.BS_FilSysType) - (int)(&bpb)), sizeof(bpb.BS_FilSysType));
+    fprintf(output_stream, "'\n");
   }
   /* check if it is FAT32 (wrong according to Microsoft) */
   if ((ftype = f32_determineFATType()) != FAT32)
     error(0,_("File system on image isn't FAT32, but FAT%d !"),ftype);
   
   /* finds out if the FAT is mirrorred */
-  if (!(bpb.BPB_ExtFlags & 0x80)) info.FATmirroring = 1;
+  if (!(bpb.BPB_ExtFlags & 0x80))
+    info.FATmirroring = 1;
   else {
     info.FATmirroring = 0;
     info.FATstart += (bpb.BPB_ExtFlags & 0x0F) * info.FATsize; /* if not, it sets up to the active FAT */
+  }
+
+  if (debug_mode) {
+    fprintf(output_stream, "(f32_mount) FAT mirroring: %s\n", (info.FATmirroring)?"yes":"no");
   }
   if ((cacheFsec = (unsigned long *)malloc(sizeof(unsigned long) * info.fSecClusters)) == NULL)
     error(0,_("Out of memory !"));

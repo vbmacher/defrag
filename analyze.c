@@ -65,8 +65,9 @@ unsigned short entryCount;
   * @param startCluster starting cluster of the item
   * @param entCluster directory cluster that links to the item
   * @param ind index of the item in directory cluster
+  * @param isDir if the file is directory (1), or regular file (0)
   */
-void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned short ind)
+void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned short ind, unsigned char isDir)
 {
   if (aTable == NULL) {
     if ((aTable = (aTableItem *)malloc(MAX_FILES * sizeof(aTableItem))) == NULL)
@@ -78,6 +79,10 @@ void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned s
   aTable[tableCount-1].startCluster = startCluster;
   aTable[tableCount-1].entryCluster = entCluster;
   aTable[tableCount-1].entryIndex = ind;
+  aTable[tableCount-1].isDir = isDir;
+
+  if (debug_mode)
+    fprintf(output_stream, "(an_addFile) [%d]: start= 0x%4lx; dir= 0x%4lx; index= %d; isDir=%d\n", tableCount-1, startCluster,entCluster,ind,isDir);
 }
 
 /** The function frees up memory used for aTable
@@ -145,7 +150,7 @@ void an_scanDisk(unsigned long startCluster)
     f32_readCluster(cluster, entries);
     for (index = 0; index < entryCount; index++) {
       if (!entries[index].fileName[0]) { free(entries); return; }
-      /* in the next we work in items that:
+      /* in the next we work with items that:
            1. are not deleted,
 	   2. are not slots (long names)
 	   3. do not point to parent or root directory
@@ -157,15 +162,17 @@ void an_scanDisk(unsigned long startCluster)
 	tmpAttr = entries[index].attributes & 0x10;
         tmpCluster = f32_getStartCluster(entries[index]);
 	if (tmpCluster != 0) {
+          int isDir = 0;
 	  /* if the item is subdirectory, the function is called recursively */
           if (tmpAttr == 0x10) {
+            isDir = 1;
 	    /* protection against infinite loop */
 	    if (tmpCluster != startCluster)
 	      an_scanDisk(tmpCluster);
 	  }
           /* if a starting cluster is bad, it ignores the item */
           if (tmpCluster <= info.clusterCount) {
-            an_addFile(tmpCluster,cluster,index);
+            an_addFile(tmpCluster,cluster,index,isDir);
             diskFragmentation += an_getFileFragmentation(tmpCluster, tableCount-1);
           }
 	}
@@ -191,7 +198,7 @@ int an_analyze()
   tableCount = 0;
   
   /* table contains also root cluster */
-  an_addFile(bpb.BPB_RootClus, 0, 0);
+  an_addFile(bpb.BPB_RootClus, 0, 0, 1);
   usedClusters = 0;
   diskFragmentation = an_getFileFragmentation(bpb.BPB_RootClus, 0);
   an_scanDisk(bpb.BPB_RootClus);
