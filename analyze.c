@@ -82,7 +82,7 @@ void an_addFile(unsigned long startCluster, unsigned long entCluster, unsigned s
   aTable[tableCount-1].isDir = isDir;
 
   if (debug_mode)
-    fprintf(output_stream, "(an_addFile) [%d]: start= 0x%4lx; dir= 0x%4lx; index= %d; isDir=%d\n", tableCount-1, startCluster,entCluster,ind,isDir);
+    fprintf(output_stream, "(an_addFile) [%d]: start= 0x%5lx; dir= 0x%5lx; index= %2d; isDir=%d\n", tableCount-1, startCluster,entCluster,ind,isDir);
 }
 
 /** The function frees up memory used for aTable

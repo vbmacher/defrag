@@ -35,6 +35,7 @@
 
 /** temporary buffer for directory items (if direntry is updated) */
 F32_DirEntry *entries = NULL;
+F32_DirEntry *entries2 = NULL; // temp
 unsigned short entryCount;
 
 /** 1. cache of cluster */
@@ -291,42 +292,6 @@ void def_switchClusters(unsigned long cluster1, unsigned long cluster2)
       f32_writeFAT(cluster2, clus1val);
     }
 
-    /* Update "." and ".." entries if one of starting cluster was directory*/
-    if (isStarting1 && aTable[isStarting1-1].isDir) {
-      // cluster1 will point to cluster2
-      f32_readCluster(cluster1, entries);
-      for (i = 0; i < entryCount; i++) {
-        if (!entries[i].fileName[0]) break;
-        if (entries[i].fileName[0] == 0xe5) continue; // deleted
-        if (entries[i].attributes == 0x0f) continue;  // slot
-        if (!memcmp(entries[i].fileName,".       ",8)) {
-          // found it
-          f32_setStartCluster(cluster2,&entries[i]);
-          f32_writeCluster(cluster1, entries);
-          break;
-        } else if (!memcmp(entries[i].fileName,"..      ",8)) {
-          // TODO: what with ".." ?
-        }
-      }
-    }
-    if (isStarting2 && aTable[isStarting2-1].isDir) {
-      // cluster2 will point to cluster1
-      f32_readCluster(cluster2, entries);
-      for (i = 0; i < entryCount; i++) {
-        if (!entries[i].fileName[0]) break;
-        if (entries[i].fileName[0] == 0xe5) continue; // deleted
-        if (entries[i].attributes == 0x0f) continue;  // slot
-        if (!memcmp(entries[i].fileName,".       ",8)) {
-          // found it
-          f32_setStartCluster(cluster1,&entries[i]);
-          f32_writeCluster(cluster2, entries);
-          break;
-        } else if (!memcmp(entries[i].fileName,"..      ",8)) {
-          // TODO: what with ".." ?
-        }
-      }
-    }
-
     /* update aTable */
     if (isStarting1)
       aTable[isStarting1-1].startCluster = cluster2;
@@ -358,10 +323,115 @@ void def_switchClusters(unsigned long cluster1, unsigned long cluster2)
 
     if (debug_mode) {
       i = def_findParent(cluster1);
-      fprintf(output_stream, _("    1:(new)0x%lx.parent= 0x%lx\n"), cluster1, i);
+      fprintf(output_stream, _("    1:(new)0x%lx.parent= 0x%lx, value=0x%lx\n"), cluster1, i, f32_getNextCluster(cluster1));
       i = def_findParent(cluster2);
-      fprintf(output_stream, _("    2:(new)0x%lx.parent= 0x%lx\n"), cluster2, i);
+      fprintf(output_stream, _("    2:(new)0x%lx.parent= 0x%lx, value=0x%lx\n"), cluster2, i, f32_getNextCluster(cluster2));
     }
+
+    /* Update "." and ".." entries if one of starting cluster was directory*/
+
+    // if a directory is moving somewhere else, 
+    // in all its dir entries we must find subdirectories,
+    // load their entries and at every '..' entry put the new value
+    // of the directory cluster..
+    if ((entries2 = (F32_DirEntry *)malloc(entryCount * sizeof(F32_DirEntry))) == NULL) {
+      error(0, _("Out of memory !"));
+    }
+
+    if (isStarting1 && aTable[isStarting1-1].isDir) {
+      // cluster1 will point to cluster2
+      for (tmpVal1 = cluster2; !F32_LAST(tmpVal1); tmpVal1 = f32_getNextCluster(tmpVal1)) {
+        f32_readCluster(tmpVal1, entries);
+        if (!memcmp(entries[0].fileName,".       ",8)) {
+          // found it
+          if (debug_mode) {
+            fprintf(output_stream, "    1:0x%lx.%d ('.').start=0x%lx (new 0x%lx)\n", tmpVal1,0,
+            f32_getStartCluster(entries[0]), cluster2);
+          }
+          f32_setStartCluster(cluster2,&entries[0]);
+        }
+        if (!memcmp(entries[1].fileName,"..      ",8)) {
+          tmpVal2 = def_findParent(tmpVal1);
+          // found it
+          if (debug_mode) {
+            fprintf(output_stream, "    1:0x%lx.%d ('..').start=0x%lx (new 0x%lx)\n", tmpVal1,1,
+            f32_getStartCluster(entries[1]), tmpVal2);
+          }
+          f32_setStartCluster(tmpVal2,&entries[1]);
+        }
+        f32_writeCluster(tmpVal1, entries);
+
+        for (i = 0; i < entryCount; i++) {
+          if (!memcmp(entries[i].fileName,".       ",8)) continue;
+          if (!memcmp(entries[i].fileName,".       ",8)) continue;
+          if (entries[i].fileName[0] == 0) continue;
+          if (entries[i].fileName[0] == 0xe5) continue;
+          if ((entries[i].attributes & 0x10) == 0x10) {
+            // subdirectory
+            tmpVal2 = f32_getStartCluster(entries[i]);
+            f32_readCluster(tmpVal2, entries2);
+            if (!memcmp(entries2[1].fileName,"..      ",8)) {
+              if (debug_mode) {
+                fprintf(output_stream, "    1:0x%lx->0x%lx.%d ('..').start=0x%lx (new 0x%lx): '", tmpVal1, tmpVal2,1,
+                  f32_getStartCluster(entries2[1]), cluster2);
+                int k;
+                for (k = 0; k < 8; k++) fprintf(output_stream,"%c",entries[i].fileName[k]);
+                fprintf(output_stream, "'\n");
+              }
+              f32_setStartCluster(cluster2, &entries2[1]);
+              f32_writeCluster(tmpVal2, entries2);
+            }
+          }
+        }
+      }
+    }
+    if (isStarting2 && aTable[isStarting2-1].isDir) {
+      for (tmpVal1 = cluster1; !F32_LAST(tmpVal1); tmpVal1 = f32_getNextCluster(tmpVal1)) {
+        // cluster2 will point to cluster1
+        f32_readCluster(tmpVal1, entries);
+        if (!memcmp(entries[0].fileName,".       ",8)) {
+          // found it
+          if (debug_mode) {
+            fprintf(output_stream, "    2:0x%lx.%d ('.').start=0x%lx (new 0x%lx)\n", tmpVal1,0,
+            f32_getStartCluster(entries[0]), cluster1);
+          }
+          f32_setStartCluster(cluster1,&entries[0]);
+        }
+        if (!memcmp(entries[1].fileName,"..      ",8)) {
+          tmpVal2 = def_findParent(tmpVal1);
+          // found it
+          if (debug_mode) {
+            fprintf(output_stream, "    2:0x%lx.%d ('..').start=0x%lx (new 0x%lx)\n", tmpVal1,1,
+            f32_getStartCluster(entries[1]), tmpVal2);
+          }
+          f32_setStartCluster(tmpVal2,&entries[1]);
+        }
+        f32_writeCluster(tmpVal1, entries);
+        for (i = 0; i < entryCount; i++) {
+          if (!memcmp(entries[i].fileName,".       ",8)) continue;
+          if (!memcmp(entries[i].fileName,".       ",8)) continue;
+          if (entries[i].fileName[0] == 0) continue;
+          if (entries[i].fileName[0] == 0xe5) continue;
+          if ((entries[i].attributes & 0x10) == 0x10) {
+            // subdirectory
+            tmpVal2 = f32_getStartCluster(entries[i]);
+            f32_readCluster(tmpVal2, entries2);
+            if (!memcmp(entries2[1].fileName,"..      ",8)) {
+              if (debug_mode) {
+                fprintf(output_stream, "    2: 0x%lx->0x%lx.%d ('..').start=0x%lx (new 0x%lx): '", tmpVal1,tmpVal2,1,
+                  f32_getStartCluster(entries2[1]), cluster1);
+                int k;
+                for (k = 0; k < 8; k++) fprintf(output_stream,"%c",entries[i].fileName[k]);
+                fprintf(output_stream, "'\n");
+              }
+              f32_setStartCluster(cluster1, &entries2[1]);
+              f32_writeCluster(tmpVal2, entries2);
+            }
+          }
+        }
+      }
+    }
+    free(entries2);
 }
 
 
