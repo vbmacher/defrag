@@ -53,8 +53,8 @@ If no image is mounted, you can execute it with a file as parameter:
 
 ### Fragmentation 
 
-Files stored on a filesystem consist of blocks of data, usually fixed in size. Fragmentation of a file, in FAT32 or
-(other similar filesystems) means that those blocks are unordered and not continuous. Fragmentation, depending how
+Files stored on a filesystem consist of blocks of data, usually fixed in size. Fragmentation of a file, in FAT32 (or
+other similar filesystems) means that those blocks are unordered and not continuous. Fragmentation, depending how
 big it is, can be a root cause for slow file access.
  
 Depending on a use-case, if the file is accessed continuously at once, it is much better if data blocks are stored in
