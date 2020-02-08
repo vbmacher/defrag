@@ -54,24 +54,24 @@ If no image is mounted, you can execute it with a file as parameter:
 ### Fragmentation 
 
 Files stored on a filesystem consist of blocks of data, usually fixed in size. Fragmentation of a file, in FAT32 (or
-other similar filesystems) means that those blocks are unordered and not continuous. Fragmentation, depending how
-big it is, can be a root cause for slow file access.
- 
-Depending on a use-case, if the file is accessed continuously at once, it is much better if data blocks are stored in
-ordered way, so the mechanical head in the harddisk (if we don't have SSD) can do as little movements as possible. There
+other similar filesystems) means that its data blocks (in FAT called "clusters") are unordered and non-continuous.
+Fragmentation, depending on how big it is, can be the root cause for slow file access.
+
+Depending on the use-case, if a file is accessed continuously at once, it is much better if the data blocks are somehow
+ordered, so the mechanical head in the harddisk (if we don't have SSD) must do as little movements as possible. There
 are two root causes of the fragmentation - unordered placement of blocks, and non-continuous placement of blocks.
  
-The worst case for "broken" ordering is when data blocks are stored in reversed order. If we want to read the file from
+The worst case for "broken" ordering is when data blocks are stored in a reversed order. If we want to read the file from
 start to the end, disk cylinder must do one full rotation to access single data block.
 
 The worst case for non-continuous blocks is if each block is stored on different track, but in a way that the head must
 move in both directions. If tracks from the cylinder center are marked as [0,1,2,3,4], then the worst case would be if
-the blocks are stored on tracks 0,4,0,4, etc.  
+the blocks are stored on tracks 0,4,0,4, etc.
 
 Implementation of some filesystems (e.g. [ext2](http://en.wikipedia.org/wiki/Ext2#ext2_data_structures) or [hpfs](http://en.wikipedia.org/wiki/HPFS) )
-are designed in a way that the fragmentation would be minimal. One technique is to write files in sparse way, so between
-files should be some significant "distance" (free space). In that case if a file is deleted, more continuous space will
-be available for new files than before, which the risk of creating fragmentation after writing the new file is lowered.
+are designed in a way to minimize the fragmentation. One technique to minimize fragmentation is to write files in a sparse
+way, so between files would be some significant "distance" (free space). In this case if a file is deleted, more continuous
+free space will be available for new files than before, so the risk of fragmentation after writing the new file is lowered.
 Ofcourse, if there is not much free space, the fragmentation will strike back.
 
 FAT filesystem in Windows is not implemented this way, so fragmentation can occur more often. Therefore user must often
