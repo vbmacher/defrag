@@ -1,6 +1,6 @@
 /**
  * @file defrag.c
- * 
+ *
  * @brief Module performs disk defragmentation
  *
  */
@@ -11,12 +11,12 @@
  *  modify it under the terms of the GNU General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- * 
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- * 
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -31,6 +31,7 @@
 #include <entry.h>
 #include <analyze.h>
 #include <fat32.h>
+#include <disk.h>
 
 
 /** temporary buffer for directory items (if direntry is updated) */
@@ -212,7 +213,7 @@ void def_switchClusters(unsigned long cluster1, unsigned long cluster2)
         if (debug_mode)
           fprintf(output_stream, "    1:0x%lx=(root)\n", cluster1);
 	bpb.BPB_RootClus = cluster2;
-	d_writeSectors(0, (char*)&bpb, 1);
+	d_writeSectors(0, (char*)&bpb, 1, bpb.BPB_SecPerClus);
       } else {
         f32_readCluster(aTable[isStarting1-1].entryCluster, entries);
         if (debug_mode) {
@@ -234,7 +235,7 @@ void def_switchClusters(unsigned long cluster1, unsigned long cluster2)
           fprintf(output_stream, "  2:0x%lx=(root)\n", cluster2);
         /* second cluster is root */
 	bpb.BPB_RootClus = cluster1;
-	d_writeSectors(0, (char*)&bpb, 1);
+	d_writeSectors(0, (char*)&bpb, 1, bpb.BPB_SecPerClus);
       } else {
         f32_readCluster(aTable[isStarting2-1].entryCluster, entries);
 	if (debug_mode) {

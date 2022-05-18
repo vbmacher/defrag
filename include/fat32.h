@@ -114,5 +114,7 @@
   unsigned long f32_getNextCluster(unsigned long cluster);
   int f32_readCluster(unsigned long, void*);
   int f32_writeCluster(unsigned long, void*);
+  int f32_readFAT(unsigned long, unsigned long*);
+  int f32_writeFAT(unsigned long, unsigned long);
 
 #endif

@@ -1,6 +1,6 @@
 /**
  * @file analyze.c
- * 
+ *
  * @brief Module for disk fragmentation analysis
  *
  */
@@ -11,12 +11,12 @@
  *  modify it under the terms of the GNU General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- * 
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- * 
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -55,7 +55,7 @@ float diskFragmentation;
 unsigned long usedClusters;
 
 /** Number of items in single directory (variable value according to cluster size) */
-unsigned short entryCount;
+unsigned short an_entryCount;
 
 /** Filling the aTable table woks in recursive way, the table is implemented
   * as dynamic array of max 10000 items (i.e. there can exist maximum 10000
@@ -143,12 +143,12 @@ void an_scanDisk(unsigned long startCluster)
   /* In errorneous FATk we must count with clusterCount instead of 0xffffff0 */
   if (startCluster > info.clusterCount) return;
 
-  if ((entries = (F32_DirEntry *)malloc(entryCount * sizeof(F32_DirEntry))) == NULL)
+  if ((entries = (F32_DirEntry *)malloc(an_entryCount * sizeof(F32_DirEntry))) == NULL)
     error(0, _("Out of memory !"));
 
   for (cluster = startCluster; !F32_LAST(cluster); cluster = f32_getNextCluster(cluster)) {
     f32_readCluster(cluster, entries);
-    for (index = 0; index < entryCount; index++) {
+    for (index = 0; index < an_entryCount; index++) {
       if (!entries[index].fileName[0]) { free(entries); return; }
       /* in the next we work with items that:
            1. are not deleted,
@@ -192,7 +192,7 @@ int an_analyze()
 {
   fprintf(output_stream, _("Analysing disk...\n"));
 
-  entryCount = (bpb.BPB_SecPerClus * info.BPSector) / sizeof(F32_DirEntry);
+  an_entryCount = (bpb.BPB_SecPerClus * info.BPSector) / sizeof(F32_DirEntry);
   /* first phase of analysis starts with root cluster */
   aTable = NULL;
   tableCount = 0;
